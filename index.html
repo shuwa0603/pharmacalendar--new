@@ -569,6 +569,7 @@
 
   let currentUser = null;
   let allEvents = [];
+  let eventsById = {};
   let appliedEventIds = new Set();
   let pendingApplyEvent = null;
   let currentFilter = 'all';
@@ -639,6 +640,7 @@
       const { data, error } = await db.from('events').select('*').order('date', { ascending: true });
       if (error) throw error;
       allEvents = (data || []).map(e => ({ ...e, formatKey: e.format || 'online' }));
+      eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
     } catch (err) {
       console.error('イベント取得エラー:', err);
       allEvents = [];
@@ -700,7 +702,7 @@
     const applyBtn = isApplied
       ? `<button class="btn-applied">✓ 申込済み</button>`
       : currentUser
-        ? `<button class="btn-apply apply-${cat}" onclick="openApplyModal(${JSON.stringify(JSON.stringify(e))})">申し込む →</button>`
+        ? `<button class="btn-apply apply-${cat}" onclick="openApplyModal('${e.id}')">申し込む →</button>`
         : `<button class="btn-apply apply-${cat}" onclick="openModal('login')">申し込む →</button>`;
 
     return `
@@ -754,8 +756,8 @@
   // =============================================
   // 申し込みモーダルを開く
   // =============================================
-  function openApplyModal(eventJson) {
-    const e = JSON.parse(eventJson);
+  function openApplyModal(eventId) {
+    const e = eventsById[eventId];
     pendingApplyEvent = e;
     const d = new Date(e.date);
     const cat = e.category || 'pharmacy';
