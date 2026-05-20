@@ -560,8 +560,6 @@
   // =============================================
   const SUPABASE_URL = 'https://oihdiwekdpgeoytykhox.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_7YD_v5_QAxYzAc9sUa9kVw_mIJyXBqx';
-  const MICROCMS_SERVICE_ID = '16mqyneq45';
-  const MICROCMS_API_KEY = '0VCTR51Flh3vxANzpaGqCeVknFA7CZwgFPxK';
   const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-email`;
 
   // =============================================
@@ -634,19 +632,13 @@
   }
 
   // =============================================
-  // イベント取得（MicroCMS）
+  // イベント取得（Supabase）
   // =============================================
   async function loadEvents() {
     try {
-      const res = await fetch(
-        `https://${MICROCMS_SERVICE_ID}.microcms.io/api/v1/events?limit=100&orders=date`,
-        { headers: { 'X-MICROCMS-API-KEY': MICROCMS_API_KEY } }
-      );
-      const json = await res.json();
-      allEvents = (json.contents || []).map(e => ({
-        ...e,
-        formatKey: (e.format || '').includes('オンライン') ? 'online' : 'offline'
-      }));
+      const { data, error } = await db.from('events').select('*').order('date', { ascending: true });
+      if (error) throw error;
+      allEvents = (data || []).map(e => ({ ...e, formatKey: e.format || 'online' }));
     } catch (err) {
       console.error('イベント取得エラー:', err);
       allEvents = [];
@@ -726,7 +718,7 @@
           <div class="event-name">${e.title}</div>
           <div class="event-meta">
             <span class="event-tag">📅 ${d.toLocaleDateString('ja-JP')}</span>
-            <span class="event-tag">📍 ${e.format || '未定'}</span>
+            <span class="event-tag">📍 ${e.format === 'online' ? 'オンライン' : e.format === 'offline' ? 'オフライン' : e.format || '未定'}</span>
           </div>
         </div>
         ${applyBtn}
@@ -777,7 +769,7 @@
       <div class="summary-info">
         <div class="summary-company">${e.company}</div>
         <div class="summary-title">${e.title}</div>
-        <div class="summary-format">${e.format || '未定'}</div>
+        <div class="summary-format">${e.format === 'online' ? 'オンライン' : e.format === 'offline' ? 'オフライン' : e.format || '未定'}</div>
       </div>
     `;
 
@@ -842,7 +834,7 @@
           company: pendingApplyEvent.company,
           eventTitle: pendingApplyEvent.title,
           eventDate: pendingApplyEvent.date,
-          companyEmail: companyData?.email || null,
+          companyEmail: companyData?.email || pendingApplyEvent.company_email || null,
           studentName,
           university,
           year,
