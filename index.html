@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ãã¡ã¼ãã«ã¬ã³ãã¼ | è¬å­¦çå°ç¨ å°±æ´»èª¬æä¼</title>
+  <title>ファーマカレンダー | 薬学生専用 就活説明会</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -431,132 +431,132 @@
 
 <nav>
   <div class="logo">
-    ãã¡ã¼ãã«ã¬ã³ãã¼
-    <span>è¬å­¦çå°ç¨ å°±æ´»èª¬æä¼</span>
+    ファーマカレンダー
+    <span>薬学生専用 就活説明会</span>
   </div>
   <div class="nav-right" id="navRight">
-    <button class="btn btn-outline" onclick="openModal('login')">ã­ã°ã¤ã³</button>
-    <button class="btn btn-primary" onclick="openModal('signup')">æ°è¦ç»é²</button>
+    <button class="btn btn-outline" onclick="openModal('login')">ログイン</button>
+    <button class="btn btn-primary" onclick="openModal('signup')">新規登録</button>
   </div>
 </nav>
 
 <div class="hero">
-  <h1>èª¬æä¼ã<br>ã¾ã¨ãã¦ç¢ºèª</h1>
-  <p>è¬å±ã»ãã©ãã°ã¹ãã¢ã®èª¬æä¼ã<br>ä¸è¦§ã§è¡¨ç¤º</p>
+  <h1>説明会を<br>まとめて確認</h1>
+  <p>薬局・ドラッグストアの説明会を<br>一覧で表示</p>
 </div>
 
 <div class="container">
   <div class="list-header">
-    <div class="list-header-title">éå¬äºå®ã®èª¬æä¼</div>
-    <div class="count-badge" id="countBadge">0ä»¶</div>
+    <div class="list-header-title">開催予定の説明会</div>
+    <div class="count-badge" id="countBadge">0件</div>
   </div>
 
   <div class="filter-wrapper">
     <div class="filter-bar" id="filterBar">
-      <button class="filter-btn active" onclick="filterEvents('all', this)">ãã¹ã¦</button>
-      <button class="filter-btn" onclick="filterEvents('drug', this)">ãã©ãã°ã¹ãã¢</button>
-      <button class="filter-btn" onclick="filterEvents('pharmacy', this)">èª¿å¤è¬å±</button>
-      <button class="filter-btn" onclick="filterEvents('pharma', this)">è£½è¬</button>
-      <button class="filter-btn" onclick="filterEvents('online', this)">ãªã³ã©ã¤ã³</button>
-      <button class="filter-btn" onclick="filterEvents('offline', this)">å¯¾é¢</button>
+      <button class="filter-btn active" onclick="filterEvents('all', this)">すべて</button>
+      <button class="filter-btn" onclick="filterEvents('drug', this)">ドラッグストア</button>
+      <button class="filter-btn" onclick="filterEvents('pharmacy', this)">調剤薬局</button>
+      <button class="filter-btn" onclick="filterEvents('pharma', this)">製薬</button>
+      <button class="filter-btn" onclick="filterEvents('online', this)">オンライン</button>
+      <button class="filter-btn" onclick="filterEvents('offline', this)">対面</button>
     </div>
     <div class="filter-footer">
-      <button class="toggle-filter" id="toggleFilter" onclick="toggleFilterBar()">â¼ ãã¹ã¦è¦ã</button>
+      <button class="toggle-filter" id="toggleFilter" onclick="toggleFilterBar()">▼ すべて見る</button>
     </div>
   </div>
 
   <div id="eventList"></div>
 </div>
 
-<!-- ã­ã°ã¤ã³ã¢ã¼ãã« -->
+<!-- ログインモーダル -->
 <div class="modal-overlay" id="loginModal">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal('login')">Ã</button>
-    <h2>ã­ã°ã¤ã³</h2>
-    <p>è¬å­¦çã¢ã«ã¦ã³ãã§ã­ã°ã¤ã³</p>
+    <button class="modal-close" onclick="closeModal('login')">×</button>
+    <h2>ログイン</h2>
+    <p>薬学生アカウントでログイン</p>
     <div class="form-group">
-      <label>ã¡ã¼ã«ã¢ãã¬ã¹</label>
+      <label>メールアドレス</label>
       <input type="email" id="loginEmail" placeholder="example@pharm.ac.jp">
     </div>
     <div class="form-group">
-      <label>ãã¹ã¯ã¼ã</label>
-      <input type="password" id="loginPassword" placeholder="ãã¹ã¯ã¼ã">
+      <label>パスワード</label>
+      <input type="password" id="loginPassword" placeholder="パスワード">
     </div>
     <div class="form-error" id="loginError"></div>
-    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:8px" onclick="handleLogin()">ã­ã°ã¤ã³</button>
-    <p style="text-align:center;margin-top:12px;font-size:12px">ã¢ã«ã¦ã³ãããªãæ¹ã¯ <a href="#" onclick="closeModal('login');openModal('signup')" style="color:var(--green)">æ°è¦ç»é²</a></p>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:8px" onclick="handleLogin()">ログイン</button>
+    <p style="text-align:center;margin-top:12px;font-size:12px">アカウントがない方は <a href="#" onclick="closeModal('login');openModal('signup')" style="color:var(--green)">新規登録</a></p>
   </div>
 </div>
 
-<!-- æ°è¦ç»é²ã¢ã¼ãã« -->
+<!-- 新規登録モーダル -->
 <div class="modal-overlay" id="signupModal">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal('signup')">Ã</button>
-    <h2>æ°è¦ç»é²</h2>
-    <p>è¬å­¦çå°ç¨ã®å°±æ´»ãµã¼ãã¹</p>
+    <button class="modal-close" onclick="closeModal('signup')">×</button>
+    <h2>新規登録</h2>
+    <p>薬学生専用の就活サービス</p>
     <div class="form-group">
-      <label>ã¡ã¼ã«ã¢ãã¬ã¹</label>
+      <label>メールアドレス</label>
       <input type="email" id="signupEmail" placeholder="example@pharm.ac.jp">
     </div>
     <div class="form-group">
-      <label>ãã¹ã¯ã¼ã</label>
-      <input type="password" id="signupPassword" placeholder="8æå­ä»¥ä¸">
+      <label>パスワード</label>
+      <input type="password" id="signupPassword" placeholder="8文字以上">
     </div>
     <div class="form-group">
-      <label>ãåå</label>
-      <input type="text" id="signupName" placeholder="è¬å­¦ å¤ªé">
+      <label>お名前</label>
+      <input type="text" id="signupName" placeholder="薬学 太郎">
     </div>
     <div class="form-group">
-      <label>å¤§å­¦å</label>
-      <input type="text" id="signupUniv" placeholder="ââå¤§å­¦è¬å­¦é¨">
+      <label>大学名</label>
+      <input type="text" id="signupUniv" placeholder="○○大学薬学部">
     </div>
     <div class="form-group">
-      <label>å­¦å¹´</label>
+      <label>学年</label>
       <select id="signupYear">
-        <option value="">é¸æãã¦ãã ãã</option>
-        <option value="4">4å¹´ç</option>
-        <option value="5">5å¹´ç</option>
-        <option value="6">6å¹´ç</option>
+        <option value="">選択してください</option>
+        <option value="4">4年生</option>
+        <option value="5">5年生</option>
+        <option value="6">6年生</option>
       </select>
     </div>
     <div class="form-error" id="signupError"></div>
-    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:8px" onclick="handleSignup()">ç»é²ãã</button>
-    <p style="text-align:center;margin-top:12px;font-size:12px">ãã§ã«ã¢ã«ã¦ã³ãããæã¡ã®æ¹ã¯ <a href="#" onclick="closeModal('signup');openModal('login')" style="color:var(--green)">ã­ã°ã¤ã³</a></p>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:8px" onclick="handleSignup()">登録する</button>
+    <p style="text-align:center;margin-top:12px;font-size:12px">すでにアカウントをお持ちの方は <a href="#" onclick="closeModal('signup');openModal('login')" style="color:var(--green)">ログイン</a></p>
   </div>
 </div>
 
-<!-- ç³ãè¾¼ã¿ã¢ã¼ãã« -->
+<!-- 申し込みモーダル -->
 <div class="modal-overlay" id="applyModal">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal('apply')">Ã</button>
-    <h2>èª¬æä¼ã«ç³ãè¾¼ã</h2>
-    <p>ä»¥ä¸ã®èª¬æä¼ã¸ã®åå ãç³ãè¾¼ã¿ã¾ã</p>
+    <button class="modal-close" onclick="closeModal('apply')">×</button>
+    <h2>説明会に申し込む</h2>
+    <p>以下の説明会への参加を申し込みます</p>
     <div class="apply-event-summary" id="applyEventSummary"></div>
     <div class="apply-note">
-      â ï¸ ç³ãè¾¼ã¿å¾ãç»é²ã¡ã¼ã«ã¢ãã¬ã¹ã«ç¢ºèªã¡ã¼ã«ãå±ãå ´åãããã¾ãã<br>
-      ã­ã£ã³ã»ã«ã¯åä¼æ¥­ã®æ¡åã«å¾ã£ã¦ãã ããã
+      ⚠️ 申し込み後、登録メールアドレスに確認メールが届く場合があります。<br>
+      キャンセルは各企業の案内に従ってください。
     </div>
     <div class="apply-btn-row">
-      <button class="btn btn-outline" onclick="closeModal('apply')">ã­ã£ã³ã»ã«</button>
-      <button class="btn btn-primary" id="confirmApplyBtn" onclick="confirmApply()">ç³ãè¾¼ã</button>
+      <button class="btn btn-outline" onclick="closeModal('apply')">キャンセル</button>
+      <button class="btn btn-primary" id="confirmApplyBtn" onclick="confirmApply()">申し込む</button>
     </div>
     <div class="form-error" id="applyError"></div>
   </div>
 </div>
 
-<!-- å®äºã¢ã¼ãã« -->
+<!-- 完了モーダル -->
 <div class="modal-overlay" id="doneModal">
   <div class="modal">
-    <div class="apply-success-icon">â</div>
-    <h2>ç³ãè¾¼ã¿å®äºï¼</h2>
-    <p class="done-sub">èª¬æä¼ã¸ã®åå ç³ãè¾¼ã¿ãå®äºãã¾ããã<br>å½æ¥ã®ãåå ããå¾ã¡ãã¦ãã¾ãã</p>
-    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px" onclick="closeModal('done')">éãã</button>
+    <div class="apply-success-icon">✓</div>
+    <h2>申し込み完了！</h2>
+    <p class="done-sub">説明会への参加申し込みが完了しました。<br>当日のご参加をお待ちしています。</p>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px" onclick="closeModal('done')">閉じる</button>
   </div>
 </div>
 
 <script>
   // =============================================
-  // è¨­å®
+  // 設定
   // =============================================
   const SUPABASE_URL = 'https://oihdiwekdpgeoytykhox.supabase.co';
   const SUPABASE_KEY = 'sb_publishable_7YD_v5_QAxYzAc9sUa9kVw_mIJyXBqx';
@@ -564,7 +564,7 @@
   const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-email`;
 
   // =============================================
-  // åæå
+  // 初期化
   // =============================================
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -576,11 +576,11 @@
   let currentFilter = 'all';
   let filterExpanded = false;
 
-  const WEEKDAYS = ['æ¥', 'æ', 'ç«', 'æ°´', 'æ¨', 'é', 'å'];
-  const CATEGORY_LABEL = { drug: 'ãã©ãã°ã¹ãã¢', pharmacy: 'èª¿å¤è¬å±', pharma: 'è£½è¬' };
+  const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+  const CATEGORY_LABEL = { drug: 'ドラッグストア', pharmacy: '調剤薬局', pharma: '製薬' };
 
   // =============================================
-  // èªè¨¼ç¶æã®ç£è¦
+  // 認証状態の監視
   // =============================================
   db.auth.onAuthStateChange(async (event, session) => {
     if (session?.user) {
@@ -598,7 +598,7 @@
   });
 
   // =============================================
-  // ãã­ãã£ã¼ã«ä¿è¨¼ï¼ã­ã°ã¤ã³æã«profileããªããã°ä½æï¼
+  // プロフィール保証（ログイン時にprofileがなければ作成）
   // =============================================
   async function ensureProfile(user) {
     const { data } = await db.from('profiles').select('id').eq('id', user.id).single();
@@ -613,7 +613,7 @@
   }
 
   // =============================================
-  // ããã²ã¼ã·ã§ã³æ´æ°
+  // ナビゲーション更新
   // =============================================
   function updateNavForUser(user) {
     const initial = (user.user_metadata?.name || user.email || '?')[0].toUpperCase();
@@ -622,19 +622,19 @@
         <div class="user-avatar">${initial}</div>
         <span style="font-size:13px;font-weight:500">${user.user_metadata?.name || user.email}</span>
       </div>
-      <button class="btn btn-outline" onclick="handleLogout()">ã­ã°ã¢ã¦ã</button>
+      <button class="btn btn-outline" onclick="handleLogout()">ログアウト</button>
     `;
   }
 
   function updateNavForLoggedOut() {
     document.getElementById('navRight').innerHTML = `
-      <button class="btn btn-outline" onclick="openModal('login')">ã­ã°ã¤ã³</button>
-      <button class="btn btn-primary" onclick="openModal('signup')">æ°è¦ç»é²</button>
+      <button class="btn btn-outline" onclick="openModal('login')">ログイン</button>
+      <button class="btn btn-primary" onclick="openModal('signup')">新規登録</button>
     `;
   }
 
   // =============================================
-  // ã¤ãã³ãåå¾ï¼Supabaseï¼
+  // イベント取得（Supabase）
   // =============================================
   async function loadEvents() {
     try {
@@ -643,14 +643,14 @@
       allEvents = (data || []).map(e => ({ ...e, formatKey: e.format || 'online' }));
       eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
     } catch (err) {
-      console.error('ã¤ãã³ãåå¾ã¨ã©ã¼:', err);
+      console.error('イベント取得エラー:', err);
       allEvents = [];
     }
     renderList();
   }
 
   // =============================================
-  // ã¤ãã³ãä¸è¦§ã¬ã³ããªã³ã°
+  // イベント一覧レンダリング
   // =============================================
   function renderList() {
     const now = new Date();
@@ -664,19 +664,19 @@
       filtered = filtered.filter(e => e.category === currentFilter);
     }
 
-    document.getElementById('countBadge').textContent = `${filtered.length}ä»¶`;
+    document.getElementById('countBadge').textContent = `${filtered.length}件`;
 
     if (filtered.length === 0) {
       document.getElementById('eventList').innerHTML =
-        '<div class="empty">ç¾å¨è¡¨ç¤ºã§ããèª¬æä¼ã¯ããã¾ãã</div>';
+        '<div class="empty">現在表示できる説明会はありません</div>';
       return;
     }
 
-    // æãã¨ã«ã°ã«ã¼ãå
+    // 月ごとにグループ化
     const grouped = {};
     filtered.forEach(e => {
       const d = new Date(e.date);
-      const key = `${d.getFullYear()}å¹´${d.getMonth() + 1}æ`;
+      const key = `${d.getFullYear()}年${d.getMonth() + 1}月`;
       if (!grouped[key]) grouped[key] = [];
       grouped[key].push(e);
     });
@@ -693,7 +693,7 @@
 
   function renderEventCard(e) {
     const d = new Date(e.date);
-    const month = `${d.getMonth() + 1}æ`;
+    const month = `${d.getMonth() + 1}月`;
     const day = d.getDate();
     const weekday = WEEKDAYS[d.getDay()];
     const cat = e.category || 'pharmacy';
@@ -701,10 +701,10 @@
     const isApplied = appliedEventIds.has(e.id);
 
     const applyBtn = isApplied
-      ? `<button class="btn-applied">â ç³è¾¼æ¸ã¿</button>`
+      ? `<button class="btn-applied">✓ 申込済み</button>`
       : currentUser
-        ? `<button class="btn-apply apply-${cat}" onclick="openApplyModal('${e.id}')">ç³ãè¾¼ã â</button>`
-        : `<button class="btn-apply apply-${cat}" onclick="openModal('login')">ç³ãè¾¼ã â</button>`;
+        ? `<button class="btn-apply apply-${cat}" onclick="openApplyModal('${e.id}')">申し込む →</button>`
+        : `<button class="btn-apply apply-${cat}" onclick="openModal('login')">申し込む →</button>`;
 
     return `
       <div class="event-card card-${cat}">
@@ -720,8 +720,8 @@
           </div>
           <div class="event-name">${e.title}</div>
           <div class="event-meta">
-            <span class="event-tag">ð ${d.toLocaleDateString('ja-JP')}</span>
-            <span class="event-tag">ð ${e.format === 'online' ? 'ãªã³ã©ã¤ã³' : e.format === 'offline' ? 'ãªãã©ã¤ã³' : e.format || 'æªå®'}</span>
+            <span class="event-tag">📅 ${d.toLocaleDateString('ja-JP')}</span>
+            <span class="event-tag">📍 ${e.format === 'online' ? 'オンライン' : e.format === 'offline' ? 'オフライン' : e.format || '未定'}</span>
           </div>
         </div>
         ${applyBtn}
@@ -730,7 +730,7 @@
   }
 
   // =============================================
-  // ãã£ã«ã¿ã¼
+  // フィルター
   // =============================================
   function filterEvents(type, btn) {
     currentFilter = type;
@@ -742,11 +742,11 @@
   function toggleFilterBar() {
     filterExpanded = !filterExpanded;
     document.getElementById('filterBar').classList.toggle('expanded', filterExpanded);
-    document.getElementById('toggleFilter').textContent = filterExpanded ? 'â² éãã' : 'â¼ ãã¹ã¦è¦ã';
+    document.getElementById('toggleFilter').textContent = filterExpanded ? '▲ 閉じる' : '▼ すべて見る';
   }
 
   // =============================================
-  // ç³ãè¾¼ã¿æ¸ã¿ã¤ãã³ãèª­ã¿è¾¼ã¿
+  // 申し込み済みイベント読み込み
   // =============================================
   async function loadMyApplications() {
     if (!currentUser) return;
@@ -755,7 +755,7 @@
   }
 
   // =============================================
-  // ç³ãè¾¼ã¿ã¢ã¼ãã«ãéã
+  // 申し込みモーダルを開く
   // =============================================
   function openApplyModal(eventId) {
     const e = eventsById[eventId];
@@ -765,26 +765,26 @@
 
     document.getElementById('applyEventSummary').innerHTML = `
       <div class="summary-date-box date-${cat}">
-        <div class="s-month" style="color:var(--${cat})">${d.getMonth() + 1}æ</div>
+        <div class="s-month" style="color:var(--${cat})">${d.getMonth() + 1}月</div>
         <div class="s-day day-${cat}">${d.getDate()}</div>
         <div class="s-week">${WEEKDAYS[d.getDay()]}</div>
       </div>
       <div class="summary-info">
         <div class="summary-company">${e.company}</div>
         <div class="summary-title">${e.title}</div>
-        <div class="summary-format">${e.format === 'online' ? 'ãªã³ã©ã¤ã³' : e.format === 'offline' ? 'ãªãã©ã¤ã³' : e.format || 'æªå®'}</div>
+        <div class="summary-format">${e.format === 'online' ? 'オンライン' : e.format === 'offline' ? 'オフライン' : e.format || '未定'}</div>
       </div>
     `;
 
     const btn = document.getElementById('confirmApplyBtn');
     btn.disabled = false;
-    btn.textContent = 'ç³ãè¾¼ã';
+    btn.textContent = '申し込む';
     document.getElementById('applyError').style.display = 'none';
     openModal('apply');
   }
 
   // =============================================
-  // ç³ãè¾¼ã¿ç¢ºå®
+  // 申し込み確定
   // =============================================
   async function confirmApply() {
     if (!currentUser || !pendingApplyEvent) return;
@@ -792,7 +792,7 @@
     const btn = document.getElementById('confirmApplyBtn');
     const errEl = document.getElementById('applyError');
     btn.disabled = true;
-    btn.textContent = 'éä¿¡ä¸­â¦';
+    btn.textContent = '送信中…';
     errEl.style.display = 'none';
 
     const { error } = await db.from('applications').insert({
@@ -806,24 +806,24 @@
 
     if (error) {
       errEl.textContent = error.code === '23505'
-        ? 'ãã®èª¬æä¼ã¯ãã§ã«ç³ãè¾¼ã¿æ¸ã¿ã§ãã'
-        : 'ç³ãè¾¼ã¿ã«å¤±æãã¾ãããããä¸åº¦ãè©¦ããã ããã';
+        ? 'この説明会はすでに申し込み済みです。'
+        : '申し込みに失敗しました。もう一度お試しください。';
       errEl.style.display = 'block';
       btn.disabled = false;
-      btn.textContent = 'ç³ãè¾¼ã';
+      btn.textContent = '申し込む';
       return;
     }
 
-    // ãã­ãã£ã¼ã«ã¨ä¼æ¥­ã¡ã¼ã«ãåå¾
+    // プロフィールと企業メールを取得
     const [{ data: profileData }, { data: companyData }] = await Promise.all([
       db.from('profiles').select('name, university, year').eq('id', currentUser.id).single(),
       db.from('company_emails').select('email').eq('company', pendingApplyEvent.company).single(),
     ]);
 
-    // ãã­ãã£ã¼ã«ãåå¾ã§ããªãå ´åã¯user_metadataããã©ã¼ã«ããã¯ã«ä½¿ç¨
-    const studentName = profileData?.name || currentUser.user_metadata?.name || 'ä¸æ';
-    const university = profileData?.university || currentUser.user_metadata?.university || 'ä¸æ';
-    const year = profileData?.year || currentUser.user_metadata?.year || 'ä¸æ';
+    // プロフィールが取得できない場合はuser_metadataをフォールバックに使用
+    const studentName = profileData?.name || currentUser.user_metadata?.name || '不明';
+    const university = profileData?.university || currentUser.user_metadata?.university || '不明';
+    const year = profileData?.year || currentUser.user_metadata?.year || '不明';
 
     try {
       await fetch(EDGE_FUNCTION_URL, {
@@ -844,7 +844,7 @@
         }),
       });
     } catch (e) {
-      console.error('ã¡ã¼ã«éä¿¡ã¨ã©ã¼:', e);
+      console.error('メール送信エラー:', e);
     }
 
     appliedEventIds.add(pendingApplyEvent.id);
@@ -855,7 +855,7 @@
   }
 
   // =============================================
-  // èªè¨¼å¦ç
+  // 認証処理
   // =============================================
   async function handleSignup() {
     const email = document.getElementById('signupEmail').value;
@@ -867,12 +867,12 @@
     errEl.style.display = 'none';
 
     if (!email || !password || !name || !univ || !year) {
-      errEl.textContent = 'ãã¹ã¦ã®é ç®ãå¥åãã¦ãã ãã';
+      errEl.textContent = 'すべての項目を入力してください';
       errEl.style.display = 'block';
       return;
     }
     if (password.length < 8) {
-      errEl.textContent = 'ãã¹ã¯ã¼ãã¯8æå­ä»¥ä¸ã«ãã¦ãã ãã';
+      errEl.textContent = 'パスワードは8文字以上にしてください';
       errEl.style.display = 'block';
       return;
     }
@@ -884,11 +884,11 @@
     });
 
     if (error) {
-      errEl.textContent = 'ç»é²ã«å¤±æãã¾ãã: ' + error.message;
+      errEl.textContent = '登録に失敗しました: ' + error.message;
       errEl.style.display = 'block';
     } else {
       closeModal('signup');
-      alert('ç¢ºèªã¡ã¼ã«ãéä¿¡ãã¾ãããã¡ã¼ã«ããç¢ºèªã®ä¸ãã­ã°ã¤ã³ãã¦ãã ããã');
+      alert('確認メールを送信しました。メールをご確認の上、ログインしてください。');
     }
   }
 
@@ -901,7 +901,7 @@
     const { error } = await db.auth.signInWithPassword({ email, password });
 
     if (error) {
-      errEl.textContent = 'ã­ã°ã¤ã³ã«å¤±æãã¾ãã: ' + error.message;
+      errEl.textContent = 'ログインに失敗しました: ' + error.message;
       errEl.style.display = 'block';
     } else {
       closeModal('login');
@@ -913,7 +913,7 @@
   }
 
   // =============================================
-  // ã¢ã¼ãã«ç®¡ç
+  // モーダル管理
   // =============================================
   function openModal(name) {
     document.getElementById(name + 'Modal').classList.add('active');
@@ -924,7 +924,7 @@
   }
 
   // =============================================
-  // èµ·å
+  // 起動
   // =============================================
   loadEvents();
 </script>
