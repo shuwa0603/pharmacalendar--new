@@ -814,38 +814,7 @@
       return;
     }
 
-    // プロフィールと企業メールを取得
-    const [{ data: profileData }, { data: companyData }] = await Promise.all([
-      db.from('profiles').select('name, university, year').eq('id', currentUser.id).single(),
-      db.from('company_emails').select('email').eq('company', pendingApplyEvent.company).single(),
-    ]);
-
-    // プロフィールが取得できない場合はuser_metadataをフォールバックに使用
-    const studentName = profileData?.name || currentUser.user_metadata?.name || '不明';
-    const university = profileData?.university || currentUser.user_metadata?.university || '不明';
-    const year = profileData?.year || currentUser.user_metadata?.year || '不明';
-
-    try {
-      await fetch(EDGE_FUNCTION_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${EDGE_ANON_KEY}`,
-        },
-        body: JSON.stringify({
-          studentEmail: currentUser.email,
-          company: pendingApplyEvent.company,
-          eventTitle: pendingApplyEvent.title,
-          eventDate: pendingApplyEvent.date,
-          companyEmail: companyData?.email || pendingApplyEvent.company_email || null,
-          studentName,
-          university,
-          year,
-        }),
-      });
-    } catch (e) {
-      console.error('メール送信エラー:', e);
-    }
+    // メール送信はSupabase DBトリガー（send_application_email）が自動で行う
 
     appliedEventIds.add(pendingApplyEvent.id);
     pendingApplyEvent = null;
