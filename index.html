@@ -989,6 +989,7 @@
   async function handleNewPassword() {
     const password = document.getElementById('newPassword').value;
     const errEl = document.getElementById('newPasswordError');
+    const btn = document.querySelector('#newPasswordModal .btn-primary');
     errEl.style.display = 'none';
 
     if (!password || password.length < 8) {
@@ -997,14 +998,31 @@
       return;
     }
 
-    const { error } = await db.auth.updateUser({ password });
+    if (btn) { btn.disabled = true; btn.textContent = '設定中…'; }
 
-    if (error) {
-      errEl.textContent = '設定に失敗しました: ' + error.message;
+    try {
+      const { data } = await db.auth.getSession();
+      const session = data?.session;
+      if (!session) {
+        errEl.textContent = 'セッションが切れています。もう一度パスワードリセットのメールからやり直してください。';
+        errEl.style.display = 'block';
+        return;
+      }
+
+      const { error } = await db.auth.updateUser({ password });
+
+      if (error) {
+        errEl.textContent = '設定に失敗しました: ' + error.message;
+        errEl.style.display = 'block';
+      } else {
+        closeModal('newPassword');
+        alert('パスワードを変更しました。');
+      }
+    } catch (e) {
+      errEl.textContent = 'エラーが発生しました: ' + (e.message || String(e));
       errEl.style.display = 'block';
-    } else {
-      closeModal('newPassword');
-      alert('パスワードを変更しました。');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '設定する'; }
     }
   }
 
