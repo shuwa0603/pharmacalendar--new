@@ -1009,7 +1009,6 @@
         errEl.style.display = 'block';
         return;
       }
-      recoveryAccessToken = null;
 
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -1031,24 +1030,26 @@
       }
 
       if (res.ok) {
+        recoveryAccessToken = null;
         closeModal('newPassword');
         alert('パスワードを変更しました。');
       } else {
         const errData = await res.json().catch(() => ({}));
+        const errorCode = (errData.error_code || errData.code || '').toLowerCase();
         const rawMsg = (errData.message || errData.msg || '').toLowerCase();
         let userMsg;
-        if (rawMsg.includes('different from the old') || rawMsg.includes('same as the old') || rawMsg.includes('same password')) {
+        if (errorCode === 'same_password' || rawMsg.includes('different from the old') || rawMsg.includes('same as the old') || rawMsg.includes('same password')) {
           userMsg = '現在設定されているパスワードと同じです。別のパスワードを入力してください。';
-        } else if (rawMsg.includes('password history') || rawMsg.includes('previously used') || rawMsg.includes('been used before')) {
+        } else if (errorCode === 'password_history_not_met' || rawMsg.includes('password history') || rawMsg.includes('previously used') || rawMsg.includes('been used before')) {
           userMsg = '以前使用したことのあるパスワードは使用できません。新しいパスワードを入力してください。';
         } else if (rawMsg.includes('at least') && rawMsg.includes('character')) {
           userMsg = 'パスワードは8文字以上で入力してください。';
         } else if (rawMsg.includes('weak') || rawMsg.includes('strength')) {
           userMsg = 'パスワードが簡単すぎます。英字・数字を組み合わせてください。';
-        } else if (res.status === 401 || rawMsg.includes('invalid') || rawMsg.includes('expired')) {
+        } else if (res.status === 401 || errorCode.includes('invalid') || rawMsg.includes('invalid') || rawMsg.includes('expired')) {
           userMsg = 'リンクの有効期限が切れています。もう一度パスワードリセットのメールを送ってください。';
         } else {
-          userMsg = '設定に失敗しました。もう一度お試しください。';
+          userMsg = `設定に失敗しました。（${errData.error_code || errData.msg || res.status}）`;
         }
         errEl.textContent = userMsg;
         errEl.style.display = 'block';
