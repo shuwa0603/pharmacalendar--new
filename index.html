@@ -632,6 +632,7 @@
   let allEvents = [];
   let eventsById = {};
   let appliedEventIds = new Set();
+  let recoveryAccessToken = null;
   let pendingApplyEvent = null;
   let currentFilter = 'all';
   let filterExpanded = false;
@@ -644,6 +645,7 @@
   // =============================================
   db.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
+      recoveryAccessToken = session?.access_token || null;
       openModal('newPassword');
       return;
     }
@@ -1001,25 +1003,62 @@
     if (btn) { btn.disabled = true; btn.textContent = '設定中…'; }
 
     try {
-      const { data } = await db.auth.getSession();
-      const session = data?.session;
-      if (!session) {
+      const accessToken = recoveryAccessToken;
+      if (!accessToken) {
         errEl.textContent = 'セッションが切れています。もう一度パスワードリセットのメールからやり直してください。';
         errEl.style.display = 'block';
         return;
       }
+      recoveryAccessToken = null;
 
-      const { error } = await db.auth.updateUser({ password });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
-      if (error) {
-        errEl.textContent = '設定に失敗しました: ' + error.message;
-        errEl.style.display = 'block';
-      } else {
+      let res;
+      try {
+        res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': EDGE_ANON_KEY,
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ password }),
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if (res.ok) {
         closeModal('newPassword');
         alert('パスワードを変更しました。');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const rawMsg = (errData.message || errData.msg || '').toLowerCase();
+        let userMsg;
+        if (rawMsg.includes('different from the old') || rawMsg.includes('same as the old') || rawMsg.includes('same password')) {
+          userMsg = '現在設定されているパスワードと同じです。別のパスワードを入力してください。';
+        } else if (rawMsg.includes('password history') || rawMsg.includes('previously used') || rawMsg.includes('been used before')) {
+          userMsg = '以前使用したことのあるパスワードは使用できません。新しいパスワードを入力してください。';
+        } else if (rawMsg.includes('at least') && rawMsg.includes('character')) {
+          userMsg = 'パスワードは8文字以上で入力してください。';
+        } else if (rawMsg.includes('weak') || rawMsg.includes('strength')) {
+          userMsg = 'パスワードが簡単すぎます。英字・数字を組み合わせてください。';
+        } else if (res.status === 401 || rawMsg.includes('invalid') || rawMsg.includes('expired')) {
+          userMsg = 'リンクの有効期限が切れています。もう一度パスワードリセットのメールを送ってください。';
+        } else {
+          userMsg = '設定に失敗しました。もう一度お試しください。';
+        }
+        errEl.textContent = userMsg;
+        errEl.style.display = 'block';
       }
     } catch (e) {
-      errEl.textContent = 'エラーが発生しました: ' + (e.message || String(e));
+      if (e.name === 'AbortError') {
+        errEl.textContent = '通信がタイムアウトしました。再度お試しください。';
+      } else {
+        errEl.textContent = 'エラーが発生しました: ' + (e.message || String(e));
+      }
       errEl.style.display = 'block';
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = '設定する'; }
