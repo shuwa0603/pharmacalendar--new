@@ -1075,7 +1075,18 @@
     const { error } = await db.auth.signInWithPassword({ email, password });
 
     if (error) {
-      errEl.textContent = 'ログインに失敗しました: ' + error.message;
+      const raw = (error.message || '').toLowerCase();
+      let msg;
+      if (raw.includes('invalid') || raw.includes('credentials') || raw.includes('password')) {
+        msg = 'メールアドレスまたはパスワードが正しくありません。';
+      } else if (raw.includes('email not confirmed') || raw.includes('not confirmed')) {
+        msg = 'メールアドレスの確認が完了していません。届いたメールのリンクをクリックしてください。';
+      } else if (raw.includes('too many') || raw.includes('rate')) {
+        msg = 'ログイン試行回数が多すぎます。しばらく待ってからお試しください。';
+      } else {
+        msg = 'ログインに失敗しました。もう一度お試しください。';
+      }
+      errEl.textContent = msg;
       errEl.style.display = 'block';
     } else {
       closeModal('login');
