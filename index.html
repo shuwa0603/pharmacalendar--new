@@ -50,8 +50,9 @@
 
     .logo {
       font-family: 'DM Serif Display', serif;
-      font-size: 20px;
+      font-size: 17px;
       color: var(--green);
+      white-space: nowrap;
     }
 
     .logo span {
@@ -84,16 +85,16 @@
     .hero {
       background: linear-gradient(135deg, var(--green) 0%, #0d4a32 100%);
       color: white;
-      padding: 8px 24px;
+      padding: 10px 24px;
       text-align: center;
     }
 
     .hero h1 {
       font-family: 'DM Serif Display', serif;
-      font-size: 32px;
+      font-size: 28px;
       font-weight: 400;
-      margin-bottom: 10px;
-      line-height: 1.3;
+      margin-bottom: 0;
+      line-height: 1.4;
     }
 
     .hero p { font-size: 14px; opacity: 0.8; font-weight: 300; }
@@ -183,10 +184,10 @@
       background: var(--white);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 18px;
-      margin-bottom: 10px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
       display: flex;
-      gap: 16px;
+      gap: 12px;
       align-items: center;
       transition: box-shadow 0.2s, transform 0.2s;
     }
@@ -196,9 +197,9 @@
     .event-date-box {
       background: var(--green-pale);
       border-radius: 10px;
-      padding: 10px 14px;
+      padding: 7px 10px;
       text-align: center;
-      min-width: 58px;
+      min-width: 50px;
       flex-shrink: 0;
     }
 
@@ -247,9 +248,9 @@
     .event-tag { font-size: 11px; color: var(--gray); }
 
     .btn-apply {
-      padding: 9px 16px;
+      padding: 7px 12px;
       border-radius: 8px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       border: none;
       cursor: pointer;
@@ -266,9 +267,9 @@
     .btn-apply:hover { opacity: 0.85; transform: scale(1.03); }
 
     .btn-applied {
-      padding: 9px 16px;
+      padding: 7px 12px;
       border-radius: 8px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       border: 2px solid var(--border);
       cursor: default;
@@ -280,6 +281,24 @@
       align-items: center;
       gap: 4px;
       flex-shrink: 0;
+    }
+
+    .detail-desc {
+      background: var(--cream);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--dark);
+      margin-bottom: 20px;
+      white-space: pre-wrap;
+    }
+
+    .detail-no-desc {
+      color: var(--gray);
+      font-size: 13px;
+      margin-bottom: 20px;
     }
 
     .empty {
@@ -432,7 +451,7 @@
 <nav>
   <div class="logo">
     ファーマカレンダー
-    <span>薬学生専用 就活説明会</span>
+    <span>薬学生専用</span>
   </div>
   <div class="nav-right" id="navRight">
     <button class="btn btn-outline" onclick="openModal('login')">ログイン</button>
@@ -442,7 +461,6 @@
 
 <div class="hero">
   <h1>説明会を<br>まとめて確認</h1>
-  <p>薬局・ドラッグストアの説明会を<br>一覧で表示</p>
 </div>
 
 <div class="container">
@@ -456,7 +474,6 @@
       <button class="filter-btn active" onclick="filterEvents('all', this)">すべて</button>
       <button class="filter-btn" onclick="filterEvents('drug', this)">ドラッグストア</button>
       <button class="filter-btn" onclick="filterEvents('pharmacy', this)">調剤薬局</button>
-      <button class="filter-btn" onclick="filterEvents('pharma', this)">製薬</button>
       <button class="filter-btn" onclick="filterEvents('online', this)">オンライン</button>
       <button class="filter-btn" onclick="filterEvents('offline', this)">対面</button>
     </div>
@@ -541,6 +558,18 @@
       <button class="btn btn-primary" id="confirmApplyBtn" onclick="confirmApply()">申し込む</button>
     </div>
     <div class="form-error" id="applyError"></div>
+  </div>
+</div>
+
+<!-- 詳細モーダル -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal" style="max-width:480px">
+    <button class="modal-close" onclick="closeModal('detail')">×</button>
+    <h2 id="detailTitle" style="padding-right:24px"></h2>
+    <p id="detailCompany" style="font-size:13px;color:var(--green);font-weight:700;margin-bottom:4px;margin-top:6px"></p>
+    <p id="detailMeta" style="font-size:12px;color:var(--gray);margin-bottom:16px"></p>
+    <div id="detailDesc"></div>
+    <div id="detailApplyBtn"></div>
   </div>
 </div>
 
@@ -707,7 +736,7 @@
         : `<button class="btn-apply apply-${cat}" onclick="openModal('login')">申し込む →</button>`;
 
     return `
-      <div class="event-card card-${cat}">
+      <div class="event-card card-${cat}" onclick="openDetailModal('${e.id}')" style="cursor:pointer">
         <div class="event-date-box date-${cat}">
           <div class="month" style="color:var(--${cat})">${month}</div>
           <div class="day day-${cat}">${day}</div>
@@ -720,11 +749,11 @@
           </div>
           <div class="event-name">${e.title}</div>
           <div class="event-meta">
-            <span class="event-tag">📅 ${d.toLocaleDateString('ja-JP')}</span>
+            <span class="event-tag">📅 ${d.toLocaleDateString('ja-JP')} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}${e.end_time ? '〜' + e.end_time : '〜'}</span>
             <span class="event-tag">📍 ${e.format === 'online' ? 'オンライン' : e.format === 'offline' ? 'オフライン' : e.format || '未定'}</span>
           </div>
         </div>
-        ${applyBtn}
+        <div onclick="event.stopPropagation()">${applyBtn}</div>
       </div>
     `;
   }
@@ -752,6 +781,43 @@
     if (!currentUser) return;
     const { data } = await db.from('applications').select('event_id').eq('user_id', currentUser.id);
     if (data) appliedEventIds = new Set(data.map(r => r.event_id));
+  }
+
+  // =============================================
+  // 詳細モーダルを開く
+  // =============================================
+  function openDetailModal(eventId) {
+    const e = eventsById[eventId];
+    const d = new Date(e.date);
+    const cat = e.category || 'pharmacy';
+    const catLabel = CATEGORY_LABEL[cat] || cat;
+    const isApplied = appliedEventIds.has(e.id);
+
+    document.getElementById('detailTitle').textContent = e.title;
+    document.getElementById('detailCompany').innerHTML =
+      `${e.company} <span class="category-badge badge-${cat}">${catLabel}</span>`;
+    const timeStr = `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const endTimeStr = e.end_time ? `〜${e.end_time}` : '〜';
+    document.getElementById('detailMeta').textContent =
+      `📅 ${d.toLocaleDateString('ja-JP')}（${WEEKDAYS[d.getDay()]}）${timeStr}${endTimeStr}　📍 ${e.format === 'online' ? 'オンライン' : e.format === 'offline' ? 'オフライン' : e.format || '未定'}`;
+
+    const descEl = document.getElementById('detailDesc');
+    if (e.description && e.description.trim()) {
+      descEl.innerHTML = `<p style="font-size:12px;font-weight:700;color:var(--gray);letter-spacing:1px;margin-bottom:8px">詳細</p><div class="detail-desc">${e.description.replace(/\n/g, '<br>')}</div>`;
+    } else {
+      descEl.innerHTML = `<p style="font-size:12px;font-weight:700;color:var(--gray);letter-spacing:1px;margin-bottom:8px">詳細</p><p class="detail-no-desc">説明文はまだ登録されていません。</p>`;
+    }
+
+    const applyEl = document.getElementById('detailApplyBtn');
+    if (isApplied) {
+      applyEl.innerHTML = `<button class="btn-applied" style="width:100%;justify-content:center;padding:12px">✓ 申込済み</button>`;
+    } else if (currentUser) {
+      applyEl.innerHTML = `<button class="btn-apply apply-${cat}" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="closeModal('detail');openApplyModal('${e.id}')">申し込む →</button>`;
+    } else {
+      applyEl.innerHTML = `<button class="btn-apply apply-${cat}" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="closeModal('detail');openModal('login')">ログインして申し込む →</button>`;
+    }
+
+    openModal('detail');
   }
 
   // =============================================
