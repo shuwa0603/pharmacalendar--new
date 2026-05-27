@@ -501,7 +501,38 @@
     </div>
     <div class="form-error" id="loginError"></div>
     <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:8px" onclick="handleLogin()">ログイン</button>
-    <p style="text-align:center;margin-top:12px;font-size:12px">アカウントがない方は <a href="#" onclick="closeModal('login');openModal('signup')" style="color:var(--green)">新規登録</a></p>
+    <p style="text-align:center;margin-top:10px;font-size:12px"><a href="#" onclick="closeModal('login');openModal('reset')" style="color:var(--gray)">パスワードをお忘れの方はこちら</a></p>
+    <p style="text-align:center;margin-top:6px;font-size:12px">アカウントがない方は <a href="#" onclick="closeModal('login');openModal('signup')" style="color:var(--green)">新規登録</a></p>
+  </div>
+</div>
+
+<!-- パスワードリセットモーダル -->
+<div class="modal-overlay" id="resetModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('reset')">×</button>
+    <h2>パスワードをリセット</h2>
+    <p>登録済みのメールアドレスを入力してください。リセット用のリンクを送信します。</p>
+    <div class="form-group" style="margin-top:16px">
+      <label>メールアドレス</label>
+      <input type="email" id="resetEmail" placeholder="example@pharm.ac.jp">
+    </div>
+    <div class="form-error" id="resetError"></div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:8px" onclick="handlePasswordReset()">送信する</button>
+    <p style="text-align:center;margin-top:12px;font-size:12px"><a href="#" onclick="closeModal('reset');openModal('login')" style="color:var(--green)">← ログインに戻る</a></p>
+  </div>
+</div>
+
+<!-- 新パスワード設定モーダル -->
+<div class="modal-overlay" id="newPasswordModal">
+  <div class="modal">
+    <h2>新しいパスワードを設定</h2>
+    <p>新しいパスワードを入力してください。</p>
+    <div class="form-group" style="margin-top:16px">
+      <label>新しいパスワード（8文字以上）</label>
+      <input type="password" id="newPassword" placeholder="新しいパスワード">
+    </div>
+    <div class="form-error" id="newPasswordError"></div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:8px" onclick="handleNewPassword()">設定する</button>
   </div>
 </div>
 
@@ -612,6 +643,10 @@
   // 認証状態の監視
   // =============================================
   db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      openModal('newPassword');
+      return;
+    }
     if (session?.user) {
       currentUser = session.user;
       await ensureProfile(session.user);
@@ -924,6 +959,52 @@
     } else {
       closeModal('signup');
       alert('確認メールを送信しました。メールをご確認の上、ログインしてください。');
+    }
+  }
+
+  async function handlePasswordReset() {
+    const email = document.getElementById('resetEmail').value;
+    const errEl = document.getElementById('resetError');
+    errEl.style.display = 'none';
+
+    if (!email) {
+      errEl.textContent = 'メールアドレスを入力してください';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://pharmacalendar.vercel.app'
+    });
+
+    if (error) {
+      errEl.textContent = '送信に失敗しました: ' + error.message;
+      errEl.style.display = 'block';
+    } else {
+      closeModal('reset');
+      alert('パスワードリセット用のメールを送信しました。メールをご確認ください。');
+    }
+  }
+
+  async function handleNewPassword() {
+    const password = document.getElementById('newPassword').value;
+    const errEl = document.getElementById('newPasswordError');
+    errEl.style.display = 'none';
+
+    if (!password || password.length < 8) {
+      errEl.textContent = 'パスワードは8文字以上にしてください';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const { error } = await db.auth.updateUser({ password });
+
+    if (error) {
+      errEl.textContent = '設定に失敗しました: ' + error.message;
+      errEl.style.display = 'block';
+    } else {
+      closeModal('newPassword');
+      alert('パスワードを変更しました。');
     }
   }
 
