@@ -1016,7 +1016,7 @@
       let res;
       try {
         res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-          method: 'PATCH',
+          method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
             'apikey': EDGE_ANON_KEY,
