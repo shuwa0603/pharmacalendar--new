@@ -714,7 +714,11 @@
       await ensureProfile(session.user);
       updateNavForUser(session.user);
       await loadMyApplications();
-      renderList();
+      if (allEvents.length === 0) {
+        loadEvents(); // loadEvents内でrenderList()を呼ぶ
+      } else {
+        renderList();
+      }
     } else {
       currentUser = null;
       appliedEventIds = new Set();
@@ -798,23 +802,17 @@
   // =============================================
   async function loadEvents() {
     try {
-      const { data, error } = await db.from('events').select('*').order('date', { ascending: true });
-      if (error) {
-        const isAuthError = error.status === 401 ||
-          (error.message || '').toLowerCase().includes('jwt') ||
-          error.code === 'PGRST301';
-        if (isAuthError) {
-          await db.auth.signOut();
-          const { data: data2, error: error2 } = await db.from('events').select('*').order('date', { ascending: true });
-          if (!error2) {
-            allEvents = (data2 || []).map(e => ({ ...e, formatKey: e.format || 'online' }));
-            eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/events?select=*&order=date.asc`,
+        {
+          headers: {
+            'apikey': EDGE_ANON_KEY,
+            'Authorization': `Bearer ${EDGE_ANON_KEY}`
           }
-          renderList();
-          return;
         }
-        throw error;
-      }
+      );
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
       allEvents = (data || []).map(e => ({ ...e, formatKey: e.format || 'online' }));
       eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
     } catch (err) {
@@ -1232,25 +1230,20 @@
   // 起動
   // =============================================
   (async () => {
-    let session = null;
+    loadEvents(); // セッション状態に関係なく即座にイベントを取得・表示
+
     try {
       const result = await db.auth.getSession();
-      session = result.data.session;
-      if (!session) {
-        await db.auth.signOut(); // 古い壊れたトークンをクリーンアップ
+      const session = result.data.session;
+      if (session?.user) {
+        currentUser = session.user;
+        await ensureProfile(session.user);
+        updateNavForUser(session.user);
+        await loadMyApplications();
+        renderList();
       }
     } catch(e) {
-      await db.auth.signOut();
-    }
-
-    loadEvents();
-
-    if (session?.user) {
-      currentUser = session.user;
-      await ensureProfile(session.user);
-      updateNavForUser(session.user);
-      await loadMyApplications();
-      renderList();
+      // セッション取得エラーは無視（イベント表示には影響しない）
     }
   })();
 </script>
