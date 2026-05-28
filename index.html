@@ -1191,6 +1191,9 @@
     errEl.textContent = '処理中...';
     errEl.style.display = 'block';
 
+    // 古いセッション/トークン更新処理をクリアしてからログイン
+    try { await db.auth.signOut({ scope: 'local' }); } catch(e) {}
+
     let loginResult;
     try {
       loginResult = await db.auth.signInWithPassword({ email, password });
