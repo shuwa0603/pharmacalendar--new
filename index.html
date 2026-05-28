@@ -777,7 +777,22 @@
   async function loadEvents() {
     try {
       const { data, error } = await db.from('events').select('*').order('date', { ascending: true });
-      if (error) throw error;
+      if (error) {
+        const isAuthError = error.status === 401 ||
+          (error.message || '').toLowerCase().includes('jwt') ||
+          error.code === 'PGRST301';
+        if (isAuthError) {
+          await db.auth.signOut();
+          const { data: data2, error: error2 } = await db.from('events').select('*').order('date', { ascending: true });
+          if (!error2) {
+            allEvents = (data2 || []).map(e => ({ ...e, formatKey: e.format || 'online' }));
+            eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
+          }
+          renderList();
+          return;
+        }
+        throw error;
+      }
       allEvents = (data || []).map(e => ({ ...e, formatKey: e.format || 'online' }));
       eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
     } catch (err) {
