@@ -283,6 +283,23 @@
       flex-shrink: 0;
     }
 
+    .btn-full {
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      border: none;
+      cursor: default;
+      font-family: 'Noto Sans JP', sans-serif;
+      white-space: nowrap;
+      background: #f3f4f6;
+      color: #9ca3af;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
     .detail-desc {
       background: var(--cream);
       border: 1px solid var(--border);
@@ -766,11 +783,13 @@
     const catLabel = CATEGORY_LABEL[cat] || cat;
     const isApplied = appliedEventIds.has(e.id);
 
-    const applyBtn = isApplied
-      ? `<button class="btn-applied">✓ 申込済み</button>`
-      : currentUser
-        ? `<button class="btn-apply apply-${cat}" onclick="openApplyModal('${e.id}')">申し込む →</button>`
-        : `<button class="btn-apply apply-${cat}" onclick="openModal('login')">申し込む →</button>`;
+    const applyBtn = e.is_full
+      ? `<button class="btn-full">満員</button>`
+      : isApplied
+        ? `<button class="btn-applied">✓ 申込済み</button>`
+        : currentUser
+          ? `<button class="btn-apply apply-${cat}" onclick="openApplyModal('${e.id}')">申し込む →</button>`
+          : `<button class="btn-apply apply-${cat}" onclick="openModal('login')">申し込む →</button>`;
 
     return `
       <div class="event-card card-${cat}" onclick="openDetailModal('${e.id}')" style="cursor:pointer">
@@ -846,7 +865,9 @@
     }
 
     const applyEl = document.getElementById('detailApplyBtn');
-    if (isApplied) {
+    if (e.is_full) {
+      applyEl.innerHTML = `<button class="btn-full" style="width:100%;justify-content:center;padding:12px;font-size:14px">満員</button>`;
+    } else if (isApplied) {
       applyEl.innerHTML = `<button class="btn-applied" style="width:100%;justify-content:center;padding:12px">✓ 申込済み</button>`;
     } else if (currentUser) {
       applyEl.innerHTML = `<button class="btn-apply apply-${cat}" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="closeModal('detail');openApplyModal('${e.id}')">申し込む →</button>`;
@@ -862,6 +883,7 @@
   // =============================================
   function openApplyModal(eventId) {
     const e = eventsById[eventId];
+    if (e.is_full) return;
     pendingApplyEvent = e;
     const d = new Date(e.date);
     const cat = e.category || 'pharmacy';
