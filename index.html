@@ -1190,7 +1190,16 @@
     const errEl = document.getElementById('loginError');
     errEl.style.display = 'none';
 
-    const { error } = await db.auth.signInWithPassword({ email, password });
+    let loginResult;
+    try {
+      loginResult = await db.auth.signInWithPassword({ email, password });
+    } catch(e) {
+      errEl.textContent = 'ログインエラー: ' + (e.message || String(e));
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const { error } = loginResult;
 
     if (error) {
       const raw = (error.message || '').toLowerCase();
@@ -1202,7 +1211,7 @@
       } else if (raw.includes('too many') || raw.includes('rate')) {
         msg = 'ログイン試行回数が多すぎます。しばらく待ってからお試しください。';
       } else {
-        msg = 'ログインに失敗しました。もう一度お試しください。';
+        msg = 'ログインに失敗しました。(' + (error.message || 'unknown') + ')';
       }
       errEl.textContent = msg;
       errEl.style.display = 'block';
