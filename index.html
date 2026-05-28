@@ -1188,7 +1188,8 @@
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
     const errEl = document.getElementById('loginError');
-    errEl.style.display = 'none';
+    errEl.textContent = '処理中...';
+    errEl.style.display = 'block';
 
     let loginResult;
     try {
