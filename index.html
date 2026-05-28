@@ -300,6 +300,25 @@
       flex-shrink: 0;
     }
 
+    .btn-cancel {
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      font-family: 'Noto Sans JP', sans-serif;
+      white-space: nowrap;
+      background: #fee2e2;
+      color: #991b1b;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      transition: all 0.2s;
+    }
+    .btn-cancel:hover { opacity: 0.85; }
+
     .detail-desc {
       background: var(--cream);
       border: 1px solid var(--border);
@@ -493,6 +512,7 @@
       <button class="filter-btn" onclick="filterEvents('pharmacy', this)">調剤薬局</button>
       <button class="filter-btn" onclick="filterEvents('online', this)">オンライン</button>
       <button class="filter-btn" onclick="filterEvents('offline', this)">対面</button>
+      <button class="filter-btn" id="appliedFilterBtn" style="display:none" onclick="filterEvents('applied', this)">予約済み</button>
     </div>
     <div class="filter-footer">
       <button class="toggle-filter" id="toggleFilter" onclick="toggleFilterBar()">▼ すべて見る</button>
@@ -698,6 +718,21 @@
   // =============================================
   // ナビゲーション更新
   // =============================================
+  async function cancelApplication(eventId) {
+    if (!confirm('この説明会の申し込みをキャンセルしますか？')) return;
+    const { error } = await db.from('applications')
+      .delete()
+      .eq('user_id', currentUser.id)
+      .eq('event_id', eventId);
+    if (error) {
+      alert('キャンセルに失敗しました。もう一度お試しください。');
+      return;
+    }
+    appliedEventIds.delete(eventId);
+    closeModal('detail');
+    renderList();
+  }
+
   function updateNavForUser(user) {
     const initial = (user.user_metadata?.name || user.email || '?')[0].toUpperCase();
     document.getElementById('navRight').innerHTML = `
@@ -707,6 +742,8 @@
       </div>
       <button class="btn btn-outline" onclick="handleLogout()">ログアウト</button>
     `;
+    const btn = document.getElementById('appliedFilterBtn');
+    if (btn) btn.style.display = '';
   }
 
   function updateNavForLoggedOut() {
@@ -714,6 +751,13 @@
       <button class="btn btn-outline" onclick="openModal('login')">ログイン</button>
       <button class="btn btn-primary" onclick="openModal('signup')">新規登録</button>
     `;
+    const btn = document.getElementById('appliedFilterBtn');
+    if (btn) btn.style.display = 'none';
+    if (currentFilter === 'applied') {
+      currentFilter = 'all';
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('.filter-btn').classList.add('active');
+    }
   }
 
   // =============================================
@@ -743,6 +787,8 @@
       filtered = filtered.filter(e => e.formatKey === 'online');
     } else if (currentFilter === 'offline') {
       filtered = filtered.filter(e => e.formatKey === 'offline');
+    } else if (currentFilter === 'applied') {
+      filtered = filtered.filter(e => appliedEventIds.has(e.id));
     } else if (currentFilter !== 'all') {
       filtered = filtered.filter(e => e.category === currentFilter);
     }
@@ -783,13 +829,15 @@
     const catLabel = CATEGORY_LABEL[cat] || cat;
     const isApplied = appliedEventIds.has(e.id);
 
-    const applyBtn = e.is_full
-      ? `<button class="btn-full">満員</button>`
+    const applyBtn = isApplied && currentFilter === 'applied'
+      ? `<button class="btn-cancel" onclick="event.stopPropagation();cancelApplication('${e.id}')">キャンセル</button>`
       : isApplied
         ? `<button class="btn-applied">✓ 申込済み</button>`
-        : currentUser
-          ? `<button class="btn-apply apply-${cat}" onclick="openApplyModal('${e.id}')">申し込む →</button>`
-          : `<button class="btn-apply apply-${cat}" onclick="openModal('login')">申し込む →</button>`;
+        : e.is_full
+          ? `<button class="btn-full">満員</button>`
+          : currentUser
+            ? `<button class="btn-apply apply-${cat}" onclick="openApplyModal('${e.id}')">申し込む →</button>`
+            : `<button class="btn-apply apply-${cat}" onclick="openModal('login')">申し込む →</button>`;
 
     return `
       <div class="event-card card-${cat}" onclick="openDetailModal('${e.id}')" style="cursor:pointer">
@@ -865,10 +913,12 @@
     }
 
     const applyEl = document.getElementById('detailApplyBtn');
-    if (e.is_full) {
-      applyEl.innerHTML = `<button class="btn-full" style="width:100%;justify-content:center;padding:12px;font-size:14px">満員</button>`;
+    if (isApplied && currentFilter === 'applied') {
+      applyEl.innerHTML = `<button class="btn-cancel" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="cancelApplication('${e.id}')">キャンセル</button>`;
     } else if (isApplied) {
       applyEl.innerHTML = `<button class="btn-applied" style="width:100%;justify-content:center;padding:12px">✓ 申込済み</button>`;
+    } else if (e.is_full) {
+      applyEl.innerHTML = `<button class="btn-full" style="width:100%;justify-content:center;padding:12px;font-size:14px">満員</button>`;
     } else if (currentUser) {
       applyEl.innerHTML = `<button class="btn-apply apply-${cat}" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="closeModal('detail');openApplyModal('${e.id}')">申し込む →</button>`;
     } else {
