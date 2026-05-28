@@ -691,10 +691,31 @@
   });
 
   let currentUser = null;
+  let sessionToken = null; // ユーザーのaccess_token（直接管理）
   let allEvents = [];
   let eventsById = {};
   let appliedEventIds = new Set();
   let recoveryAccessToken = null;
+
+  // セッションをlocalStorageに保存・読み込み・削除するヘルパー
+  const PHARMA_SESSION_KEY = 'pharma-user-session';
+  function saveUserSession(authData) {
+    try { localStorage.setItem(PHARMA_SESSION_KEY, JSON.stringify(authData)); } catch(e) {}
+  }
+  function getUserSession() {
+    try {
+      const raw = localStorage.getItem(PHARMA_SESSION_KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      if (!s?.access_token || !s?.user) return null;
+      const now = Math.floor(Date.now() / 1000);
+      if (s.expires_at && now > s.expires_at) { localStorage.removeItem(PHARMA_SESSION_KEY); return null; }
+      return s;
+    } catch(e) { return null; }
+  }
+  function clearUserSession() {
+    try { localStorage.removeItem(PHARMA_SESSION_KEY); } catch(e) {}
+  }
   let pendingApplyEvent = null;
   let currentFilter = 'all';
   let filterExpanded = false;
@@ -705,27 +726,11 @@
   // =============================================
   // 認証状態の監視
   // =============================================
+  // PASSWORD_RECOVERYのみ処理（セッション管理は自前で行う）
   db.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       recoveryAccessToken = session?.access_token || null;
       openModal('newPassword');
-      return;
-    }
-    if (session?.user) {
-      currentUser = session.user;
-      await ensureProfile(session.user);
-      updateNavForUser(session.user);
-      await loadMyApplications();
-      if (allEvents.length === 0) {
-        loadEvents(); // loadEvents内でrenderList()を呼ぶ
-      } else {
-        renderList();
-      }
-    } else {
-      currentUser = null;
-      appliedEventIds = new Set();
-      updateNavForLoggedOut();
-      loadEvents();
     }
   });
 
@@ -733,13 +738,27 @@
   // プロフィール保証（ログイン時にprofileがなければ作成）
   // =============================================
   async function ensureProfile(user) {
-    const { data } = await db.from('profiles').select('id').eq('id', user.id).single();
-    if (!data && user.user_metadata?.name) {
-      await db.from('profiles').upsert({
-        id: user.id,
-        name: user.user_metadata.name || '',
-        university: user.user_metadata.university || '',
-        year: user.user_metadata.year || ''
+    if (!sessionToken) return;
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?select=id&id=eq.${user.id}`,
+      { headers: { 'apikey': EDGE_ANON_KEY, 'Authorization': `Bearer ${sessionToken}` } }
+    );
+    const data = await res.json();
+    if (Array.isArray(data) && data.length === 0 && user.user_metadata?.name) {
+      await fetch(`${SUPABASE_URL}/rest/v1/profiles`, {
+        method: 'POST',
+        headers: {
+          'apikey': EDGE_ANON_KEY,
+          'Authorization': `Bearer ${sessionToken}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify({
+          id: user.id,
+          name: user.user_metadata.name || '',
+          university: user.user_metadata.university || '',
+          year: user.user_metadata.year || ''
+        })
       });
     }
   }
@@ -749,20 +768,28 @@
   // =============================================
   async function cancelApplication(eventId) {
     if (!confirm('この説明会の申し込みをキャンセルしますか？')) return;
-    const { data: { session } } = await db.auth.getSession();
-    if (!session) {
+    if (!sessionToken || !currentUser) {
       alert('セッションが切れています。再度ログインしてください。');
+      clearUserSession();
+      sessionToken = null;
       currentUser = null;
       appliedEventIds = new Set();
       updateNavForLoggedOut();
       renderList();
       return;
     }
-    const { error } = await db.from('applications')
-      .delete()
-      .eq('user_id', session.user.id)
-      .eq('event_id', eventId);
-    if (error) {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/applications?user_id=eq.${currentUser.id}&event_id=eq.${eventId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          'apikey': EDGE_ANON_KEY,
+          'Authorization': `Bearer ${sessionToken}`,
+          'Prefer': 'return=minimal'
+        }
+      }
+    );
+    if (!res.ok) {
       alert('キャンセルに失敗しました。もう一度お試しください。');
       return;
     }
@@ -930,9 +957,15 @@
   // 申し込み済みイベント読み込み
   // =============================================
   async function loadMyApplications() {
-    if (!currentUser) return;
-    const { data } = await db.from('applications').select('event_id').eq('user_id', currentUser.id);
-    if (data) appliedEventIds = new Set(data.map(r => r.event_id));
+    if (!currentUser || !sessionToken) return;
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/applications?select=event_id&user_id=eq.${currentUser.id}`,
+        { headers: { 'apikey': EDGE_ANON_KEY, 'Authorization': `Bearer ${sessionToken}` } }
+      );
+      const data = await res.json();
+      if (Array.isArray(data)) appliedEventIds = new Set(data.map(r => r.event_id));
+    } catch(e) {}
   }
 
   // =============================================
@@ -1018,17 +1051,27 @@
     btn.textContent = '送信中…';
     errEl.style.display = 'none';
 
-    const { error } = await db.from('applications').insert({
-      user_id: currentUser.id,
-      event_id: pendingApplyEvent.id,
-      event_title: pendingApplyEvent.title,
-      event_date: pendingApplyEvent.date,
-      company: pendingApplyEvent.company,
-      format: pendingApplyEvent.format,
+    const applyRes = await fetch(`${SUPABASE_URL}/rest/v1/applications`, {
+      method: 'POST',
+      headers: {
+        'apikey': EDGE_ANON_KEY,
+        'Authorization': `Bearer ${sessionToken}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        user_id: currentUser.id,
+        event_id: pendingApplyEvent.id,
+        event_title: pendingApplyEvent.title,
+        event_date: pendingApplyEvent.date,
+        company: pendingApplyEvent.company,
+        format: pendingApplyEvent.format,
+      })
     });
 
-    if (error) {
-      errEl.textContent = error.code === '23505'
+    if (!applyRes.ok) {
+      const errData = await applyRes.json().catch(() => ({}));
+      errEl.textContent = (errData.code === '23505' || errData.message?.includes('duplicate'))
         ? 'この説明会はすでに申し込み済みです。'
         : '申し込みに失敗しました。もう一度お試しください。';
       errEl.style.display = 'block';
@@ -1220,17 +1263,35 @@
         return;
       }
 
-      // ログイン成功: setSession()はロック競合するためlocalStorageに直接書き込んでリロード
-      const projectRef = SUPABASE_URL.replace('https://', '').replace('.supabase.co', '');
-      localStorage.setItem(`sb-${projectRef}-auth-token`, JSON.stringify(authData));
-      location.reload();
+      // ログイン成功: Supabaseクライアントを使わず直接状態を設定
+      sessionToken = authData.access_token;
+      currentUser = authData.user;
+      saveUserSession(authData);
+      try { await ensureProfile(authData.user); } catch(e) {}
+      updateNavForUser(authData.user);
+      await loadMyApplications();
+      errEl.style.display = 'none';
+      closeModal('login');
+      renderList();
     } catch(e) {
       errEl.textContent = 'ネットワークエラーが発生しました。もう一度お試しください。';
     }
   }
 
   async function handleLogout() {
-    await db.auth.signOut();
+    // サーバー側ログアウト（ベストエフォート）
+    if (sessionToken) {
+      fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+        method: 'POST',
+        headers: { 'apikey': EDGE_ANON_KEY, 'Authorization': `Bearer ${sessionToken}` }
+      }).catch(() => {});
+    }
+    clearUserSession();
+    sessionToken = null;
+    currentUser = null;
+    appliedEventIds = new Set();
+    updateNavForLoggedOut();
+    renderList();
   }
 
   // =============================================
@@ -1250,18 +1311,15 @@
   (async () => {
     loadEvents(); // セッション状態に関係なく即座にイベントを取得・表示
 
-    try {
-      const result = await db.auth.getSession();
-      const session = result.data.session;
-      if (session?.user) {
-        currentUser = session.user;
-        await ensureProfile(session.user);
-        updateNavForUser(session.user);
-        await loadMyApplications();
-        renderList();
-      }
-    } catch(e) {
-      // セッション取得エラーは無視（イベント表示には影響しない）
+    // Supabaseクライアントを使わず自前のセッションキーから復元
+    const stored = getUserSession();
+    if (stored?.user) {
+      sessionToken = stored.access_token;
+      currentUser = stored.user;
+      try { await ensureProfile(stored.user); } catch(e) {}
+      updateNavForUser(stored.user);
+      await loadMyApplications();
+      renderList();
     }
   })();
 </script>
