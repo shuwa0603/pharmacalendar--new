@@ -33,6 +33,7 @@
       background: var(--cream);
       color: var(--dark);
       min-height: 100vh;
+      overscroll-behavior-y: none;
     }
 
     nav {
@@ -696,7 +697,7 @@
       currentUser = null;
       appliedEventIds = new Set();
       updateNavForLoggedOut();
-      renderList();
+      loadEvents();
     }
   });
 
@@ -720,9 +721,18 @@
   // =============================================
   async function cancelApplication(eventId) {
     if (!confirm('この説明会の申し込みをキャンセルしますか？')) return;
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) {
+      alert('セッションが切れています。再度ログインしてください。');
+      currentUser = null;
+      appliedEventIds = new Set();
+      updateNavForLoggedOut();
+      renderList();
+      return;
+    }
     const { error } = await db.from('applications')
       .delete()
-      .eq('user_id', currentUser.id)
+      .eq('user_id', session.user.id)
       .eq('event_id', eventId);
     if (error) {
       alert('キャンセルに失敗しました。もう一度お試しください。');
@@ -1185,6 +1195,18 @@
   // 起動
   // =============================================
   loadEvents();
+
+  // Safari対策：起動時にセッションを明示的に確認
+  (async () => {
+    const { data: { session } } = await db.auth.getSession();
+    if (session?.user && !currentUser) {
+      currentUser = session.user;
+      await ensureProfile(session.user);
+      updateNavForUser(session.user);
+      await loadMyApplications();
+      renderList();
+    }
+  })();
 </script>
 </body>
 </html>
