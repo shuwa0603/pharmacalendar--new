@@ -686,7 +686,9 @@
   // =============================================
   // 初期化
   // =============================================
-  const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const db = supabase.createClient(SUPABASE_URL, EDGE_ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: true }
+  });
 
   let currentUser = null;
   let allEvents = [];
