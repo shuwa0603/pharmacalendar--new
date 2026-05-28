@@ -1191,37 +1191,58 @@
     errEl.textContent = '処理中...';
     errEl.style.display = 'block';
 
-    // 古いセッション/トークン更新処理をクリアしてからログイン
-    try { await db.auth.signOut({ scope: 'local' }); } catch(e) {}
-
-    let loginResult;
+    // Supabaseクライアントのロック競合を避けるためdirect fetchでログイン
+    let authData;
     try {
-      loginResult = await db.auth.signInWithPassword({ email, password });
+      const res = await fetch(
+        `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': EDGE_ANON_KEY
+          },
+          body: JSON.stringify({ email, password })
+        }
+      );
+      authData = await res.json();
+      if (!res.ok) {
+        const raw = ((authData.error_description || authData.msg || authData.message || authData.error || '') + '').toLowerCase();
+        let msg;
+        if (raw.includes('invalid') || raw.includes('credentials') || raw.includes('password')) {
+          msg = 'メールアドレスまたはパスワードが正しくありません。';
+        } else if (raw.includes('not confirmed') || raw.includes('email')) {
+          msg = 'メールアドレスの確認が完了していません。届いたメールのリンクをクリックしてください。';
+        } else if (raw.includes('too many') || raw.includes('rate')) {
+          msg = 'ログイン試行回数が多すぎます。しばらく待ってからお試しください。';
+        } else {
+          msg = 'ログインに失敗しました。もう一度お試しください。';
+        }
+        errEl.textContent = msg;
+        errEl.style.display = 'block';
+        return;
+      }
     } catch(e) {
-      errEl.textContent = 'ログインエラー: ' + (e.message || String(e));
+      errEl.textContent = 'ネットワークエラーが発生しました。もう一度お試しください。';
       errEl.style.display = 'block';
       return;
     }
 
-    const { error } = loginResult;
-
-    if (error) {
-      const raw = (error.message || '').toLowerCase();
-      let msg;
-      if (raw.includes('invalid') || raw.includes('credentials') || raw.includes('password')) {
-        msg = 'メールアドレスまたはパスワードが正しくありません。';
-      } else if (raw.includes('email not confirmed') || raw.includes('not confirmed')) {
-        msg = 'メールアドレスの確認が完了していません。届いたメールのリンクをクリックしてください。';
-      } else if (raw.includes('too many') || raw.includes('rate')) {
-        msg = 'ログイン試行回数が多すぎます。しばらく待ってからお試しください。';
-      } else {
-        msg = 'ログインに失敗しました。(' + (error.message || 'unknown') + ')';
-      }
-      errEl.textContent = msg;
-      errEl.style.display = 'block';
-    } else {
-      closeModal('login');
+    // セッションをSupabaseクライアントに反映してページを再初期化
+    try {
+      await db.auth.setSession({
+        access_token: authData.access_token,
+        refresh_token: authData.refresh_token
+      });
+    } catch(e) {
+      // setSessionも失敗した場合はlocalStorageに書き込んでリロード
+      const projectRef = SUPABASE_URL.replace('https://', '').replace('.supabase.co', '');
+      try { localStorage.setItem(`sb-${projectRef}-auth-token`, JSON.stringify(authData)); } catch(e2) {}
+      location.reload();
+      return;
     }
+
+    closeModal('login');
   }
 
   async function handleLogout() {
