@@ -1194,12 +1194,21 @@
   // =============================================
   // 起動
   // =============================================
-  loadEvents();
-
-  // Safari対策：起動時にセッションを明示的に確認
   (async () => {
-    const { data: { session } } = await db.auth.getSession();
-    if (session?.user && !currentUser) {
+    let session = null;
+    try {
+      const result = await db.auth.getSession();
+      session = result.data.session;
+      if (!session) {
+        await db.auth.signOut(); // 古い壊れたトークンをクリーンアップ
+      }
+    } catch(e) {
+      await db.auth.signOut();
+    }
+
+    loadEvents();
+
+    if (session?.user) {
       currentUser = session.user;
       await ensureProfile(session.user);
       updateNavForUser(session.user);
