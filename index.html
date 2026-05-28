@@ -662,6 +662,28 @@
   const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/send-email`;
 
   // =============================================
+  // 期限切れセッションのクリーンアップ（Safari通常モード対策）
+  // Supabaseクライアント初期化前に実行する必要がある
+  // =============================================
+  (function() {
+    try {
+      const keys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) keys.push(k);
+      }
+      const now = Math.floor(Date.now() / 1000);
+      keys.forEach(function(k) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(k));
+          const exp = parsed?.expires_at || parsed?.session?.expires_at;
+          if (!exp || now > exp) localStorage.removeItem(k);
+        } catch(e) { localStorage.removeItem(k); }
+      });
+    } catch(e) {}
+  })();
+
+  // =============================================
   // 初期化
   // =============================================
   const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
