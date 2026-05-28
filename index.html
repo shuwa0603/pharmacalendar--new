@@ -790,7 +790,8 @@
       }
     );
     if (!res.ok) {
-      alert('キャンセルに失敗しました。もう一度お試しください。');
+      const errBody = await res.json().catch(() => ({}));
+      alert(`キャンセル失敗 (status: ${res.status})\n${JSON.stringify(errBody)}`);
       return;
     }
     appliedEventIds.delete(eventId);
