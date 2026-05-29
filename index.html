@@ -581,29 +581,100 @@
     <h2>新規登録</h2>
     <p>薬学生専用の就活サービス</p>
     <div class="form-group">
+      <label>お名前</label>
+      <input type="text" id="signupName" placeholder="薬学 太郎">
+    </div>
+    <div class="form-group">
+      <label>大学名</label>
+      <select id="signupUniv" onchange="document.getElementById('signupUnivOther').style.display=this.value==='その他'?'block':'none'">
+        <option value="">選択してください</option>
+        <option>愛知学院大学</option>
+        <option>医療創生大学</option>
+        <option>岩手医科大学</option>
+        <option>奥羽大学</option>
+        <option>大阪医科薬科大学</option>
+        <option>大阪大谷大学</option>
+        <option>大阪公立大学</option>
+        <option>大阪大学</option>
+        <option>岡山大学</option>
+        <option>金沢大学</option>
+        <option>北里大学</option>
+        <option>九州大学</option>
+        <option>九州保健福祉大学</option>
+        <option>京都大学</option>
+        <option>京都薬科大学</option>
+        <option>近畿大学</option>
+        <option>金城学院大学</option>
+        <option>岐阜薬科大学</option>
+        <option>熊本大学</option>
+        <option>慶應義塾大学</option>
+        <option>国際医療福祉大学</option>
+        <option>静岡県立大学</option>
+        <option>就実大学</option>
+        <option>湘南医療大学</option>
+        <option>昭和医科大学</option>
+        <option>昭和薬科大学</option>
+        <option>城西大学</option>
+        <option>鈴鹿医療科学大学</option>
+        <option>摂南大学</option>
+        <option>崇城大学</option>
+        <option>第一薬科大学</option>
+        <option>千葉大学</option>
+        <option>千葉科学大学</option>
+        <option>帝京大学</option>
+        <option>帝京平成大学</option>
+        <option>東京大学</option>
+        <option>東京薬科大学</option>
+        <option>東京理科大学</option>
+        <option>東邦大学</option>
+        <option>東北医科薬科大学</option>
+        <option>東北大学</option>
+        <option>徳島大学</option>
+        <option>徳島文理大学</option>
+        <option>富山大学</option>
+        <option>名古屋市立大学</option>
+        <option>長崎大学</option>
+        <option>長崎国際大学</option>
+        <option>日本大学</option>
+        <option>日本薬科大学</option>
+        <option>広島大学</option>
+        <option>広島国際大学</option>
+        <option>兵庫医科大学</option>
+        <option>兵庫医療大学</option>
+        <option>福岡大学</option>
+        <option>福岡薬科大学</option>
+        <option>北陸大学</option>
+        <option>星薬科大学</option>
+        <option>北海道医療大学</option>
+        <option>北海道大学</option>
+        <option>武庫川女子大学</option>
+        <option>武蔵野大学</option>
+        <option>名城大学</option>
+        <option>明治薬科大学</option>
+        <option>横浜薬科大学</option>
+        <option value="その他">その他</option>
+      </select>
+      <input type="text" id="signupUnivOther" placeholder="大学名を入力してください" style="display:none;margin-top:8px;width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
+    </div>
+    <div class="form-group">
+      <label>卒業予定年度</label>
+      <select id="signupYear">
+        <option value="">選択してください</option>
+        <option value="2026">2026年3月卒業予定</option>
+        <option value="2027">2027年3月卒業予定</option>
+        <option value="2028">2028年3月卒業予定</option>
+        <option value="2029">2029年3月卒業予定</option>
+        <option value="2030">2030年3月卒業予定</option>
+        <option value="2031">2031年3月卒業予定</option>
+      </select>
+    </div>
+    <div class="form-group">
       <label>メールアドレス</label>
       <input type="email" id="signupEmail" placeholder="example@pharm.ac.jp">
     </div>
     <div class="form-group">
       <label>パスワード</label>
       <input type="password" id="signupPassword" placeholder="8文字以上">
-    </div>
-    <div class="form-group">
-      <label>お名前</label>
-      <input type="text" id="signupName" placeholder="薬学 太郎">
-    </div>
-    <div class="form-group">
-      <label>大学名</label>
-      <input type="text" id="signupUniv" placeholder="○○大学薬学部">
-    </div>
-    <div class="form-group">
-      <label>学年</label>
-      <select id="signupYear">
-        <option value="">選択してください</option>
-        <option value="4">4年生</option>
-        <option value="5">5年生</option>
-        <option value="6">6年生</option>
-      </select>
     </div>
     <div class="form-error" id="signupError"></div>
     <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:8px" onclick="handleSignup()">登録する</button>
@@ -1119,7 +1190,10 @@
     const email = document.getElementById('signupEmail').value;
     const password = document.getElementById('signupPassword').value;
     const name = document.getElementById('signupName').value;
-    const univ = document.getElementById('signupUniv').value;
+    const univSelect = document.getElementById('signupUniv').value;
+    const univ = univSelect === 'その他'
+      ? document.getElementById('signupUnivOther').value.trim()
+      : univSelect;
     const year = document.getElementById('signupYear').value;
     const errEl = document.getElementById('signupError');
     errEl.style.display = 'none';
