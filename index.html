@@ -930,7 +930,7 @@
           <div class="event-name">${e.title}</div>
           <div class="event-meta">
             <span class="event-tag">📅 ${d.toLocaleDateString('ja-JP')} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}${e.end_time ? '〜' + e.end_time : '〜'}</span>
-            <span class="event-tag">📍 ${e.format === 'online' ? 'オンライン' : e.format === 'offline' ? 'オフライン' : e.format || '未定'}</span>
+            <span class="event-tag">📍 ${e.format === 'online' ? 'オンライン' : (e.prefecture || 'オフライン')}</span>
           </div>
         </div>
         <div onclick="event.stopPropagation()">${applyBtn}</div>
@@ -985,7 +985,7 @@
     const timeStr = `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
     const endTimeStr = e.end_time ? `〜${e.end_time}` : '〜';
     document.getElementById('detailMeta').textContent =
-      `📅 ${d.toLocaleDateString('ja-JP')}（${WEEKDAYS[d.getDay()]}）${timeStr}${endTimeStr}　📍 ${e.format === 'online' ? 'オンライン' : e.format === 'offline' ? 'オフライン' : e.format || '未定'}`;
+      `📅 ${d.toLocaleDateString('ja-JP')}（${WEEKDAYS[d.getDay()]}）${timeStr}${endTimeStr}　📍 ${e.format === 'online' ? 'オンライン' : (e.prefecture || 'オフライン')}`;
 
     const descEl = document.getElementById('detailDesc');
     if (e.description && e.description.trim()) {
@@ -1029,7 +1029,7 @@
       <div class="summary-info">
         <div class="summary-company">${e.company}</div>
         <div class="summary-title">${e.title}</div>
-        <div class="summary-format">${e.format === 'online' ? 'オンライン' : e.format === 'offline' ? 'オフライン' : e.format || '未定'}</div>
+        <div class="summary-format">${e.format === 'online' ? 'オンライン' : (e.prefecture || 'オフライン')}</div>
       </div>
     `;
 
