@@ -1029,12 +1029,7 @@
         'Prefer': 'return=minimal'
       },
       body: JSON.stringify({ event_id: eventId, company: e.company })
-    }).then(async r => {
-      if (!r.ok) {
-        const body = await r.json().catch(() => ({}));
-        alert(`PVエラー (${r.status}): ${JSON.stringify(body)}`);
-      }
-    }).catch(err => alert('PVネットワークエラー: ' + err));
+    }).catch(() => {});
   }
 
   // =============================================
@@ -1348,6 +1343,18 @@
   // 起動
   // =============================================
   (async () => {
+    // サイト訪問記録（PV）
+    fetch(`${SUPABASE_URL}/rest/v1/site_visits`, {
+      method: 'POST',
+      headers: {
+        'apikey': EDGE_ANON_KEY,
+        'Authorization': `Bearer ${EDGE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: '{}'
+    }).catch(() => {});
+
     loadEvents(); // セッション状態に関係なく即座にイベントを取得・表示
 
     // Supabaseクライアントを使わず自前のセッションキーから復元
