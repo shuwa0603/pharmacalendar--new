@@ -767,6 +767,16 @@
   // ナビゲーション更新
   // =============================================
   async function cancelApplication(eventId) {
+    const ev = eventsById[eventId];
+    if (ev) {
+      const eventDate = new Date(ev.date);
+      const now = new Date();
+      const diffDays = (eventDate - now) / (1000 * 60 * 60 * 24);
+      if (diffDays < 3) {
+        alert('サイトからのキャンセル期限を過ぎています。');
+        return;
+      }
+    }
     if (!confirm('この説明会の申し込みをキャンセルしますか？')) return;
     if (!sessionToken || !currentUser) {
       alert('セッションが切れています。再度ログインしてください。');
