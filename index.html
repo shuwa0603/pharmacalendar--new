@@ -1099,7 +1099,7 @@
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal'
       },
-      body: JSON.stringify({ event_id: eventId, company: e.company })
+      body: JSON.stringify({ event_id: eventId, company: e.company, user_id: currentUser?.id || null })
     }).catch(() => {});
   }
 
