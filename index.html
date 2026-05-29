@@ -1029,7 +1029,12 @@
         'Prefer': 'return=minimal'
       },
       body: JSON.stringify({ event_id: eventId, company: e.company })
-    }).catch(() => {});
+    }).then(async r => {
+      if (!r.ok) {
+        const body = await r.json().catch(() => ({}));
+        alert(`PVエラー (${r.status}): ${JSON.stringify(body)}`);
+      }
+    }).catch(err => alert('PVネットワークエラー: ' + err));
   }
 
   // =============================================
