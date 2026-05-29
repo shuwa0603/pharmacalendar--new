@@ -1018,6 +1018,18 @@
     }
 
     openModal('detail');
+
+    // PV記録（ログイン有無に関わらず記録）
+    fetch(`${SUPABASE_URL}/rest/v1/event_views`, {
+      method: 'POST',
+      headers: {
+        'apikey': EDGE_ANON_KEY,
+        'Authorization': `Bearer ${sessionToken || EDGE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ event_id: eventId, company: e.company })
+    }).catch(() => {});
   }
 
   // =============================================
@@ -1278,6 +1290,17 @@
       sessionToken = authData.access_token;
       currentUser = authData.user;
       saveUserSession(authData);
+      // ログインイベント記録（月間MAU集計用）
+      fetch(`${SUPABASE_URL}/rest/v1/login_events`, {
+        method: 'POST',
+        headers: {
+          'apikey': EDGE_ANON_KEY,
+          'Authorization': `Bearer ${authData.access_token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ user_id: authData.user.id })
+      }).catch(() => {});
       try { await ensureProfile(authData.user); } catch(e) {}
       updateNavForUser(authData.user);
       await loadMyApplications();
