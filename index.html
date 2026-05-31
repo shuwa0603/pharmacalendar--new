@@ -196,18 +196,20 @@
       margin-bottom: 8px;
       display: flex;
       gap: 12px;
-      align-items: center;
+      align-items: flex-start;
       transition: box-shadow 0.2s, transform 0.2s;
     }
+    .event-card-top { display: flex; gap: 12px; align-items: flex-start; flex: 1; min-width: 0; }
+    .event-card-bottom { display: flex; justify-content: flex-end; }
 
     .event-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
 
     .event-date-box {
       background: var(--green-pale);
       border-radius: 10px;
-      padding: 7px 10px;
+      padding: 7px 6px;
       text-align: center;
-      min-width: 50px;
+      min-width: 42px;
       flex-shrink: 0;
     }
 
@@ -251,9 +253,11 @@
 
     .event-name { font-size: 14px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
 
-    .event-meta { display: flex; gap: 12px; flex-wrap: wrap; }
+    .event-meta { display: flex; gap: 8px; flex-wrap: nowrap; }
 
-    .event-tag { font-size: 11px; color: var(--gray); }
+    .event-tag { font-size: 11px; color: var(--gray); white-space: nowrap; }
+    .event-meta .event-tag:first-child { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
+    .event-meta .event-tag:last-child { flex-shrink: 0; }
 
     .btn-apply {
       padding: 7px 12px;
@@ -1011,17 +1015,16 @@
           <div class="weekday">${weekday}</div>
         </div>
         <div class="event-info">
-          <div class="event-company">
-            ${e.company}
-            <span class="category-badge badge-${cat}">${catLabel}</span>
+          <div class="event-company" style="display:flex; align-items:center; gap:6px">
+            <span>${e.company}</span>
+            <span class="event-tag" style="font-weight:400; margin-left:auto">📍 ${e.format === 'online' ? 'オンライン' : (e.prefecture || 'オフライン')}</span>
           </div>
           <div class="event-name">${e.title}</div>
           <div class="event-meta">
-            <span class="event-tag">📅 ${d.toLocaleDateString('ja-JP')} ${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}${e.end_time ? '〜' + e.end_time : '〜'}</span>
-            <span class="event-tag">📍 ${e.format === 'online' ? 'オンライン' : (e.prefecture || 'オフライン')}</span>
+            <span class="event-tag">📅 ${d.toLocaleDateString('ja-JP')}（${weekday}）${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}${e.end_time ? '〜' + e.end_time : '〜'}</span>
           </div>
         </div>
-        <div onclick="event.stopPropagation()">${applyBtn}</div>
+        <div onclick="event.stopPropagation()" style="align-self:flex-start">${applyBtn}</div>
       </div>
     `;
   }
