@@ -253,7 +253,7 @@
 
     .event-name { font-size: 14px; font-weight: 700; margin-bottom: 8px; line-height: 1.4; }
 
-    .event-meta { display: flex; gap: 8px; flex-wrap: nowrap; }
+    .event-meta { display: flex; gap: 8px; flex-wrap: nowrap; justify-content: flex-end; }
 
     .event-tag { font-size: 11px; color: var(--gray); white-space: nowrap; }
     .event-meta .event-tag:first-child { overflow: hidden; text-overflow: ellipsis; min-width: 0; flex-shrink: 1; }
@@ -271,9 +271,11 @@
       transition: all 0.2s;
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       flex-shrink: 0;
       color: white;
+      width: 100%;
     }
 
     .btn-apply:hover { opacity: 0.85; transform: scale(1.03); }
@@ -291,8 +293,10 @@
       color: var(--green);
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 4px;
       flex-shrink: 0;
+      width: 100%;
     }
 
     .btn-full {
@@ -1024,7 +1028,7 @@
             <span class="event-tag">📅 ${d.toLocaleDateString('ja-JP')}（${weekday}）${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}${e.end_time ? '〜' + e.end_time : '〜'}</span>
           </div>
         </div>
-        <div onclick="event.stopPropagation()" style="align-self:flex-start">${applyBtn}</div>
+        <div onclick="event.stopPropagation()" style="align-self:center;width:82px;flex-shrink:0;display:flex;justify-content:center">${applyBtn}</div>
       </div>
     `;
   }
