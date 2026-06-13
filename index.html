@@ -1035,7 +1035,10 @@
       );
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      allEvents = (data || []).map(e => ({ ...e, formatKey: e.format || 'online' }));
+      const now = new Date();
+      allEvents = (data || [])
+        .filter(e => new Date(e.date) >= now)
+        .map(e => ({ ...e, formatKey: e.format || 'online' }));
       eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
     } catch (err) {
       console.error('イベント取得エラー:', err);
