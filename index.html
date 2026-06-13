@@ -545,11 +545,13 @@
       border-radius: 6px;
       position: relative;
       min-height: 52px;
+      min-width: 0;
       padding: 4px 2px 4px;
       display: flex;
       flex-direction: column;
       align-items: center;
       transition: background 0.15s;
+      overflow: hidden;
     }
     .cal-cell:not(.empty):not(.other-month):active { background: var(--green-pale); }
     .cal-day-num {
@@ -1155,33 +1157,43 @@
     document.getElementById('calendarTitle').textContent =
       `${calYear}年${calMonth + 1}月`;
 
-    // その月の日付ごとにイベントをまとめる
-    const eventsByDay = {};
+    // 全イベントを日付文字列でまとめる（前月分も含む）
+    const eventsByDateStr = {};
     allEvents.forEach(e => {
-      const d = new Date(e.date);
-      if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
-        const day = d.getDate();
-        if (!eventsByDay[day]) eventsByDay[day] = [];
-        eventsByDay[day].push(e);
-      }
+      const ds = new Date(e.date).toISOString().split('T')[0];
+      if (!eventsByDateStr[ds]) eventsByDateStr[ds] = [];
+      eventsByDateStr[ds].push(e);
     });
 
     const firstDow    = new Date(calYear, calMonth, 1).getDay();
     const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
     const isThisMonth = _today.getFullYear() === calYear && _today.getMonth() === calMonth;
 
+    // 前月の最終日
+    const prevMonthLastDay = new Date(calYear, calMonth, 0).getDate();
+
     let html = '';
     ['日','月','火','水','木','金','土'].forEach(d => {
       html += `<div class="cal-head">${d}</div>`;
     });
+    // 先頭の空白セルに前月末日を表示（イベントチップ付き）
     for (let i = 0; i < firstDow; i++) {
-      html += `<div class="cal-cell empty"></div>`;
+      const prevDay = prevMonthLastDay - firstDow + 1 + i;
+      const prevDate = new Date(calYear, calMonth - 1, prevDay);
+      const prevDateStr = prevDate.toISOString().split('T')[0];
+      const prevEvs = eventsByDateStr[prevDateStr] || [];
+      const prevChips = prevEvs.slice(0, 3).map(e =>
+        `<div class="cal-event-chip" style="opacity:0.6">${e.company}</div>`
+      ).join('');
+      html += `<div class="cal-cell other-month" onclick="scrollToDate('${prevDateStr}')">
+        <div class="cal-day-num">${prevDay}</div>${prevChips}
+      </div>`;
     }
     for (let d = 1; d <= daysInMonth; d++) {
       const isToday  = isThisMonth && d === _today.getDate();
-      const dayEvs   = eventsByDay[d] || [];
-      const hasEvent = dayEvs.length > 0;
       const dateStr  = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const dayEvs   = eventsByDateStr[dateStr] || [];
+      const hasEvent = dayEvs.length > 0;
       const classes  = ['cal-cell', isToday ? 'today' : '', hasEvent ? 'has-event' : ''].filter(Boolean).join(' ');
 
       const chips = dayEvs.slice(0, 3).map(e =>
