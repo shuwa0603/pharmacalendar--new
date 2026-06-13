@@ -496,6 +496,92 @@
     #doneModal .modal { text-align: center; }
     #doneModal h2 { margin-bottom: 8px; }
     #doneModal .done-sub { font-size: 13px; color: var(--gray); margin-bottom: 20px; }
+
+    /* ===== カレンダー ===== */
+    .calendar-section {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 16px;
+      margin: 0 16px 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+    .calendar-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .calendar-nav-btn {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: var(--green);
+      padding: 2px 10px;
+      line-height: 1;
+    }
+    .calendar-title {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--text);
+    }
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+    .cal-head {
+      text-align: center;
+      font-size: 11px;
+      color: var(--gray);
+      padding: 4px 0 6px;
+      font-weight: 700;
+    }
+    .cal-head:first-child { color: #e53e3e; }
+    .cal-head:last-child  { color: #3182ce; }
+    .cal-cell {
+      font-size: 12px;
+      cursor: pointer;
+      border-radius: 6px;
+      position: relative;
+      min-height: 52px;
+      padding: 4px 2px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background 0.15s;
+    }
+    .cal-cell:not(.empty):not(.other-month):active { background: var(--green-pale); }
+    .cal-day-num {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .cal-cell.today .cal-day-num {
+      background: var(--green);
+      color: white;
+      font-weight: 700;
+    }
+    .cal-event-chip {
+      font-size: 9px;
+      background: var(--green-pale);
+      color: var(--green);
+      border-radius: 3px;
+      padding: 1px 3px;
+      margin-top: 2px;
+      width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: left;
+      line-height: 1.4;
+    }
+    .cal-cell.empty, .cal-cell.other-month { cursor: default; color: #ccc; }
   </style>
 </head>
 <body>
@@ -515,23 +601,31 @@
   <h1>説明会を<br>まとめて確認</h1>
 </div>
 
-<div class="container">
+<!-- カレンダー -->
+<div class="calendar-section">
+  <div class="calendar-nav">
+    <button class="calendar-nav-btn" onclick="changeCalMonth(-1)">‹</button>
+    <span class="calendar-title" id="calendarTitle"></span>
+    <button class="calendar-nav-btn" onclick="changeCalMonth(1)">›</button>
+  </div>
+  <div class="calendar-grid" id="calendarGrid"></div>
+</div>
+
+<div class="container" id="mainContainer" style="display:none">
   <div class="list-header">
-    <div class="list-header-title">開催予定の説明会</div>
+    <div class="list-header-title" id="listHeaderTitle">開催予定の説明会</div>
     <div class="count-badge" id="countBadge">0件</div>
   </div>
 
   <div class="filter-wrapper">
     <div class="filter-bar" id="filterBar">
       <button class="filter-btn active" onclick="filterEvents('all', this)">すべて</button>
-      <button class="filter-btn" onclick="filterEvents('drug', this)">ドラッグストア</button>
-      <button class="filter-btn" onclick="filterEvents('pharmacy', this)">調剤薬局</button>
       <button class="filter-btn" onclick="filterEvents('online', this)">オンライン</button>
       <button class="filter-btn" onclick="filterEvents('offline', this)">対面</button>
       <button class="filter-btn" id="appliedFilterBtn" style="display:none" onclick="filterEvents('applied', this)">予約済み</button>
     </div>
     <div class="filter-footer">
-      <button class="toggle-filter" id="toggleFilter" onclick="toggleFilterBar()">▼ すべて見る</button>
+      <button id="backBtn" onclick="backToCalendar()" style="display:none;align-items:center;gap:6px;background:none;border:none;color:var(--green);font-size:13px;font-weight:700;cursor:pointer;padding:4px 0;font-family:'Noto Sans JP',sans-serif;">‹ カレンダーに戻る</button>
     </div>
   </div>
 
@@ -985,11 +1079,18 @@
     let html = '';
     for (const [month, events] of Object.entries(grouped)) {
       html += `<div class="section-label">${month}</div>`;
+      let lastDate = '';
       for (const e of events) {
+        const dateStr = new Date(e.date).toISOString().split('T')[0];
+        if (dateStr !== lastDate) {
+          html += `<div id="date-${dateStr}" style="scroll-margin-top:72px"></div>`;
+          lastDate = dateStr;
+        }
         html += renderEventCard(e);
       }
     }
     document.getElementById('eventList').innerHTML = html;
+    renderCalendar();
   }
 
   function renderEventCard(e) {
@@ -1043,13 +1144,152 @@
     renderList();
   }
 
-  function toggleFilterBar() {
-    filterExpanded = !filterExpanded;
-    document.getElementById('filterBar').classList.toggle('expanded', filterExpanded);
-    document.getElementById('toggleFilter').textContent = filterExpanded ? '▲ 閉じる' : '▼ すべて見る';
+  // =============================================
+  // カレンダー
+  // =============================================
+  const _today = new Date();
+  let calYear  = _today.getFullYear();
+  let calMonth = _today.getMonth(); // 0-indexed
+
+  function renderCalendar() {
+    document.getElementById('calendarTitle').textContent =
+      `${calYear}年${calMonth + 1}月`;
+
+    // その月の日付ごとにイベントをまとめる
+    const eventsByDay = {};
+    allEvents.forEach(e => {
+      const d = new Date(e.date);
+      if (d.getFullYear() === calYear && d.getMonth() === calMonth) {
+        const day = d.getDate();
+        if (!eventsByDay[day]) eventsByDay[day] = [];
+        eventsByDay[day].push(e);
+      }
+    });
+
+    const firstDow    = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const isThisMonth = _today.getFullYear() === calYear && _today.getMonth() === calMonth;
+
+    let html = '';
+    ['日','月','火','水','木','金','土'].forEach(d => {
+      html += `<div class="cal-head">${d}</div>`;
+    });
+    for (let i = 0; i < firstDow; i++) {
+      html += `<div class="cal-cell empty"></div>`;
+    }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const isToday  = isThisMonth && d === _today.getDate();
+      const dayEvs   = eventsByDay[d] || [];
+      const hasEvent = dayEvs.length > 0;
+      const dateStr  = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const classes  = ['cal-cell', isToday ? 'today' : '', hasEvent ? 'has-event' : ''].filter(Boolean).join(' ');
+
+      const chips = dayEvs.slice(0, 3).map(e =>
+        `<div class="cal-event-chip">${e.company}</div>`
+      ).join('');
+
+      html += `<div class="${classes}" onclick="scrollToDate('${dateStr}')">
+        <div class="cal-day-num">${d}</div>${chips}
+      </div>`;
+    }
+    document.getElementById('calendarGrid').innerHTML = html;
   }
 
-  // =============================================
+  function changeCalMonth(delta) {
+    calMonth += delta;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    if (calMonth < 0)  { calMonth = 11; calYear--; }
+    // 月変更時はリストを閉じる
+    document.getElementById('mainContainer').style.display = 'none';
+    renderCalendar();
+  }
+
+  function scrollToDate(dateStr) {
+    if (allEvents.length === 0) return;
+
+    // カレンダーを隠してリストを表示
+    document.querySelector('.calendar-section').style.display = 'none';
+    document.getElementById('listHeaderTitle').textContent = '開催予定の説明会';
+    document.querySelector('.filter-wrapper').style.display = '';
+    document.getElementById('backBtn').style.display = 'flex';
+
+    const container = document.getElementById('mainContainer');
+    container.style.display = 'block';
+
+    // 全イベントをレンダリング
+    renderListFull();
+
+    // 該当日付（なければ最近の前後の日付）にスクロール
+    setTimeout(() => {
+      let el = document.getElementById(`date-${dateStr}`);
+      if (!el) {
+        const base = new Date(dateStr);
+        // まず過去方向を探す（最大60日）
+        for (let i = 1; i <= 60; i++) {
+          const d = new Date(base); d.setDate(d.getDate() - i);
+          el = document.getElementById(`date-${d.toISOString().split('T')[0]}`);
+          if (el) break;
+        }
+        // 見つからなければ未来方向を探す
+        if (!el) {
+          for (let i = 1; i <= 60; i++) {
+            const d = new Date(base); d.setDate(d.getDate() + i);
+            el = document.getElementById(`date-${d.toISOString().split('T')[0]}`);
+            if (el) break;
+          }
+        }
+      }
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+  }
+
+  function backToCalendar() {
+    document.getElementById('mainContainer').style.display = 'none';
+    document.getElementById('backBtn').style.display = 'none';
+    document.querySelector('.calendar-section').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function renderListFull() {
+    // filterEventsと同じロジックで全件レンダリング
+    const filtered = currentFilter === 'all'   ? allEvents
+      : currentFilter === 'online'  ? allEvents.filter(e => (e.format||'online') === 'online')
+      : currentFilter === 'offline' ? allEvents.filter(e => (e.format||'online') === 'offline')
+      : currentFilter === 'applied' ? allEvents.filter(e => appliedEventIds.has(e.id))
+      : allEvents.filter(e => e.category === currentFilter);
+
+    document.getElementById('countBadge').textContent = `${filtered.length}件`;
+
+    if (filtered.length === 0) {
+      document.getElementById('eventList').innerHTML = '<div class="empty">現在表示できる説明会はありません</div>';
+      return;
+    }
+
+    const grouped = {};
+    filtered.forEach(e => {
+      const d = new Date(e.date);
+      const key = `${d.getFullYear()}年${d.getMonth()+1}月`;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(e);
+    });
+
+    let html = '';
+    for (const [month, events] of Object.entries(grouped)) {
+      html += `<div class="section-label">${month}</div>`;
+      let lastDate = '';
+      for (const e of events) {
+        const dateStr = new Date(e.date).toISOString().split('T')[0];
+        if (dateStr !== lastDate) {
+          html += `<div id="date-${dateStr}" style="scroll-margin-top:72px"></div>`;
+          lastDate = dateStr;
+        }
+        html += renderEventCard(e);
+      }
+    }
+    document.getElementById('eventList').innerHTML = html;
+  }
+
+// =============================================
   // 申し込み済みイベント読み込み
   // =============================================
   async function loadMyApplications() {
