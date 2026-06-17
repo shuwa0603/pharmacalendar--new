@@ -613,17 +613,8 @@
   <div class="calendar-grid" id="calendarGrid"></div>
 </div>
 
-<!-- スペシャルバナー -->
-<div id="specialBanner" style="margin:0 4px 8px;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.10);">
-  <div style="background:linear-gradient(135deg,#1a6b4a 0%,#2d9b6f 50%,#1e5fa8 100%);padding:10px 14px;display:flex;align-items:center;gap:10px;">
-    <div style="flex:1;min-width:0;">
-      <div style="color:rgba(255,255,255,0.8);font-size:9px;font-weight:700;letter-spacing:1.5px;margin-bottom:2px;">🎉 SPECIAL EVENT</div>
-      <div style="color:white;font-size:15px;font-weight:900;line-height:1.2;">合同説明会</div>
-      <div style="color:rgba(255,255,255,0.9);font-size:11px;font-weight:600;margin-top:1px;">8月25日（火）東京にて開催</div>
-    </div>
-    <div style="background:white;color:#1a6b4a;font-size:10px;font-weight:700;padding:6px 12px;border-radius:16px;white-space:nowrap;flex-shrink:0;">詳細を見る →</div>
-  </div>
-</div>
+<!-- スペシャルバナー（JS で動的に更新） -->
+<div id="specialBanner" style="margin:0 4px 8px;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.10);display:none;"></div>
 
 <div class="container" id="mainContainer" style="display:none">
   <div class="list-header">
@@ -1057,6 +1048,37 @@
       allEvents = [];
     }
     renderList();
+    updateBanner();
+  }
+
+  function updateBanner() {
+    const banner = document.getElementById('specialBanner');
+    if (!banner) return;
+    if (allEvents.length === 0) { banner.style.display = 'none'; return; }
+
+    const featured = allEvents[0];
+    const d = new Date(featured.date);
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const weekday = WEEKDAYS[d.getDay()];
+    const location = featured.format === 'online' ? 'オンライン' : (featured.prefecture || 'オフライン');
+    const cat = featured.category || 'pharmacy';
+    const gradient = cat === 'drug'
+      ? 'linear-gradient(135deg,#1e5fa8 0%,#3a7fd5 60%,#1a6b4a 100%)'
+      : 'linear-gradient(135deg,#1a6b4a 0%,#2d9b6f 60%,#1e5fa8 100%)';
+    const accentColor = cat === 'drug' ? '#1e5fa8' : '#1a6b4a';
+
+    banner.style.display = 'block';
+    banner.innerHTML = `
+      <div style="background:${gradient};padding:10px 14px;display:flex;align-items:center;gap:10px;cursor:pointer" onclick="openDetailModal('${featured.id}')">
+        <div style="flex:1;min-width:0;">
+          <div style="color:rgba(255,255,255,0.8);font-size:9px;font-weight:700;letter-spacing:1.5px;margin-bottom:2px;">🎉 PICK UP</div>
+          <div style="color:white;font-size:14px;font-weight:900;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${featured.company}</div>
+          <div style="color:rgba(255,255,255,0.9);font-size:11px;font-weight:600;margin-top:1px;">${month}月${day}日（${weekday}）${location}</div>
+        </div>
+        <div style="background:white;color:${accentColor};font-size:10px;font-weight:700;padding:6px 12px;border-radius:16px;white-space:nowrap;flex-shrink:0;">詳細を見る →</div>
+      </div>
+    `;
   }
 
   // =============================================
