@@ -376,6 +376,7 @@
     }
 
     .modal-overlay.active { display: flex; }
+    .modal-overlay.active.modal-center { align-items: center; padding: 16px; }
 
     .modal {
       background: var(--white);
@@ -639,7 +640,7 @@
 </div>
 
 <!-- ログインモーダル -->
-<div class="modal-overlay" id="loginModal">
+<div class="modal-overlay modal-center" id="loginModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('login')">×</button>
     <h2>ログイン</h2>
@@ -660,7 +661,7 @@
 </div>
 
 <!-- パスワードリセットモーダル -->
-<div class="modal-overlay" id="resetModal">
+<div class="modal-overlay modal-center" id="resetModal">
   <div class="modal">
     <button class="modal-close" onclick="closeModal('reset')">×</button>
     <h2>パスワードをリセット</h2>
@@ -1478,10 +1479,9 @@
 
     if (!applyRes.ok) {
       const errData = await applyRes.json().catch(() => ({}));
-      const debugMsg = JSON.stringify(errData);
       errEl.textContent = (errData.code === '23505' || errData.message?.includes('duplicate'))
         ? 'この説明会はすでに申し込み済みです。'
-        : '申し込みに失敗しました：' + debugMsg;
+        : '申し込みに失敗しました。もう一度お試しください。';
       errEl.style.display = 'block';
       btn.disabled = false;
       btn.textContent = '申し込む';
