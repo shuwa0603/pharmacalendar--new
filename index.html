@@ -1063,7 +1063,8 @@
     if (!banner) return;
     if (allEvents.length === 0) { banner.style.display = 'none'; return; }
 
-    const featured = allEvents[0];
+    const oneWeekLater = new Date(); oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+    const featured = allEvents.find(e => new Date(e.date) >= oneWeekLater) || allEvents[0];
     const d = new Date(featured.date);
     const month = d.getMonth() + 1;
     const day = d.getDate();
