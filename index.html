@@ -1045,9 +1045,9 @@
       );
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      const now = new Date();
+      const today = new Date(); today.setHours(0,0,0,0);
       allEvents = (data || [])
-        .filter(e => new Date(e.date) >= now)
+        .filter(e => { const d = new Date(e.date); d.setHours(0,0,0,0); return d >= today; })
         .map(e => ({ ...e, formatKey: e.format || 'online' }));
       eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
     } catch (err) {
@@ -1092,8 +1092,8 @@
   // イベント一覧レンダリング
   // =============================================
   function renderList() {
-    const now = new Date();
-    let filtered = allEvents.filter(e => new Date(e.date) >= now);
+    const now = new Date(); now.setHours(0,0,0,0);
+    let filtered = allEvents.filter(e => { const d = new Date(e.date); d.setHours(0,0,0,0); return d >= now; });
 
     if (currentFilter === 'online') {
       filtered = filtered.filter(e => e.formatKey === 'online');
@@ -1175,7 +1175,7 @@
           </div>
           <div class="event-name">${e.title}</div>
           <div class="event-meta">
-            <span class="event-tag">📅 ${d.toLocaleDateString('ja-JP')}（${weekday}）${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}${e.end_time ? '〜' + e.end_time : '〜'}</span>
+            <span class="event-tag">📅 ${d.toLocaleDateString('ja-JP')}（${weekday}）${(d.getHours() === 0 && d.getMinutes() === 0) ? '時間未定' : d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0') + (e.end_time ? '〜' + e.end_time : '〜')}</span>
           </div>
         </div>
         <div onclick="event.stopPropagation()" style="align-self:center;width:82px;flex-shrink:0;display:flex;justify-content:center">${applyBtn}</div>
@@ -1380,10 +1380,10 @@
     document.getElementById('detailTitle').textContent = e.title;
     document.getElementById('detailCompany').innerHTML =
       `${e.company} <span class="category-badge badge-${cat}">${catLabel}</span>`;
-    const timeStr = `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
-    const endTimeStr = e.end_time ? `〜${e.end_time}` : '〜';
+    const isTimeUnknown = d.getHours() === 0 && d.getMinutes() === 0;
+    const timeStr = isTimeUnknown ? '時間未定' : `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}${e.end_time ? '〜' + e.end_time : '〜'}`;
     document.getElementById('detailMeta').textContent =
-      `📅 ${d.toLocaleDateString('ja-JP')}（${WEEKDAYS[d.getDay()]}）${timeStr}${endTimeStr}　📍 ${e.format === 'online' ? 'オンライン' : (e.prefecture || 'オフライン')}`;
+      `📅 ${d.toLocaleDateString('ja-JP')}（${WEEKDAYS[d.getDay()]}）${timeStr}　📍 ${e.format === 'online' ? 'オンライン' : (e.prefecture || 'オフライン')}`;
 
     const descEl = document.getElementById('detailDesc');
     if (e.description && e.description.trim()) {
