@@ -1148,15 +1148,18 @@
     const catLabel = CATEGORY_LABEL[cat] || cat;
     const isApplied = appliedEventIds.has(e.id);
 
+    const isPastDeadline = e.deadline && new Date(e.deadline) < new Date();
     const applyBtn = isApplied && currentFilter === 'applied'
       ? `<button class="btn-cancel" onclick="event.stopPropagation();cancelApplication('${e.id}')">キャンセル</button>`
       : isApplied
         ? `<button class="btn-applied">✓ 申込済み</button>`
         : e.is_full
           ? `<button class="btn-full">満員</button>`
-          : currentUser
-            ? `<button class="btn-apply apply-${cat}" onclick="openApplyModal('${e.id}')">申し込む →</button>`
-            : `<button class="btn-apply apply-${cat}" onclick="openModal('login')">申し込む →</button>`;
+          : isPastDeadline
+            ? `<button class="btn-full" style="cursor:not-allowed">締め切り済み</button>`
+            : currentUser
+              ? `<button class="btn-apply apply-${cat}" onclick="openApplyModal('${e.id}')">申し込む →</button>`
+              : `<button class="btn-apply apply-${cat}" onclick="openModal('login')">申し込む →</button>`;
 
     return `
       <div class="event-card card-${cat}" onclick="openDetailModal('${e.id}')" style="cursor:pointer">
@@ -1396,6 +1399,8 @@
       applyEl.innerHTML = `<button class="btn-applied" style="width:100%;justify-content:center;padding:12px">✓ 申込済み</button>`;
     } else if (e.is_full) {
       applyEl.innerHTML = `<button class="btn-full" style="width:100%;justify-content:center;padding:12px;font-size:14px">満員</button>`;
+    } else if (e.deadline && new Date(e.deadline) < new Date()) {
+      applyEl.innerHTML = `<button class="btn-full" style="width:100%;justify-content:center;padding:12px;font-size:14px;cursor:not-allowed">締め切り済み</button>`;
     } else if (currentUser) {
       applyEl.innerHTML = `<button class="btn-apply apply-${cat}" style="width:100%;justify-content:center;padding:12px;font-size:14px" onclick="closeModal('detail');openApplyModal('${e.id}')">申し込む →</button>`;
     } else {
