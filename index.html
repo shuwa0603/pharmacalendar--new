@@ -1486,7 +1486,7 @@
       const errData = await applyRes.json().catch(() => ({}));
       errEl.textContent = (errData.code === '23505' || errData.message?.includes('duplicate'))
         ? 'この説明会はすでに申し込み済みです。'
-        : '申し込みに失敗しました。もう一度お試しください。';
+        : `申し込みに失敗しました。(${applyRes.status}: ${errData.message || errData.error || JSON.stringify(errData)})`;
       errEl.style.display = 'block';
       btn.disabled = false;
       btn.textContent = '申し込む';
