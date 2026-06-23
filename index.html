@@ -1127,7 +1127,7 @@
       html += `<div class="section-label">${month}</div>`;
       let lastDate = '';
       for (const e of events) {
-        const dateStr = new Date(e.date).toISOString().split('T')[0];
+        const _d = new Date(e.date); const dateStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
         if (dateStr !== lastDate) {
           html += `<div id="date-${dateStr}" style="scroll-margin-top:72px"></div>`;
           lastDate = dateStr;
@@ -1207,7 +1207,8 @@
     // 全イベントを日付文字列でまとめる（前月分も含む）
     const eventsByDateStr = {};
     allEvents.forEach(e => {
-      const ds = new Date(e.date).toISOString().split('T')[0];
+      const d = new Date(e.date);
+      const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       if (!eventsByDateStr[ds]) eventsByDateStr[ds] = [];
       eventsByDateStr[ds].push(e);
     });
@@ -1341,7 +1342,7 @@
       html += `<div class="section-label">${month}</div>`;
       let lastDate = '';
       for (const e of events) {
-        const dateStr = new Date(e.date).toISOString().split('T')[0];
+        const _d = new Date(e.date); const dateStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
         if (dateStr !== lastDate) {
           html += `<div id="date-${dateStr}" style="scroll-margin-top:72px"></div>`;
           lastDate = dateStr;
