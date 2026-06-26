@@ -1201,6 +1201,11 @@
   let calYear  = _today.getFullYear();
   let calMonth = _today.getMonth(); // 0-indexed
 
+  function shortCompany(name) {
+    return name.replace(/^(株式会社|有限会社|合同会社|一般社団法人|医療法人|社会福祉法人)\s*/,'')
+               .replace(/\s*(株式会社|有限会社|合同会社)$/,'');
+  }
+
   function renderCalendar() {
     document.getElementById('calendarTitle').textContent =
       `${calYear}年${calMonth + 1}月`;
@@ -1232,7 +1237,7 @@
       const prevDateStr = prevDate.toISOString().split('T')[0];
       const prevEvs = eventsByDateStr[prevDateStr] || [];
       const prevChips = prevEvs.slice(0, 3).map(e =>
-        `<div class="cal-event-chip" style="opacity:0.6">${e.company}</div>`
+        `<div class="cal-event-chip" style="opacity:0.6">${shortCompany(e.company)}</div>`
       ).join('');
       html += `<div class="cal-cell other-month" onclick="scrollToDate('${prevDateStr}')">
         <div class="cal-day-num">${prevDay}</div>${prevChips}
@@ -1246,7 +1251,7 @@
       const classes  = ['cal-cell', isToday ? 'today' : '', hasEvent ? 'has-event' : ''].filter(Boolean).join(' ');
 
       const chips = dayEvs.slice(0, 3).map(e =>
-        `<div class="cal-event-chip">${e.company}</div>`
+        `<div class="cal-event-chip">${shortCompany(e.company)}</div>`
       ).join('');
 
       html += `<div class="${classes}" onclick="scrollToDate('${dateStr}')">
