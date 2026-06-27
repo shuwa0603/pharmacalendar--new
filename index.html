@@ -639,6 +639,9 @@
   <div id="eventList"></div>
 </div>
 
+<!-- フローティング「カレンダーに戻る」ボタン -->
+<button id="floatingBackBtn" onclick="backToCalendar()" style="display:none;position:fixed;bottom:24px;right:20px;z-index:100;align-items:center;gap:6px;background:var(--green);color:#fff;border:none;border-radius:999px;padding:12px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Noto Sans JP',sans-serif;box-shadow:0 4px 12px rgba(0,0,0,0.2);">‹ カレンダーに戻る</button>
+
 <!-- ログインモーダル -->
 <div class="modal-overlay modal-center" id="loginModal">
   <div class="modal">
@@ -1280,6 +1283,7 @@
     document.getElementById('listHeaderTitle').textContent = '開催予定の説明会';
     document.querySelector('.filter-wrapper').style.display = '';
     document.getElementById('backBtn').style.display = 'flex';
+    document.getElementById('floatingBackBtn').style.display = 'flex';
 
     const container = document.getElementById('mainContainer');
     container.style.display = 'block';
@@ -1314,6 +1318,7 @@
   function backToCalendar() {
     document.getElementById('mainContainer').style.display = 'none';
     document.getElementById('backBtn').style.display = 'none';
+    document.getElementById('floatingBackBtn').style.display = 'none';
     document.querySelector('.calendar-section').style.display = 'block';
     const sb2 = document.getElementById('specialBanner');
     if (sb2) sb2.style.display = 'block';
