@@ -627,12 +627,7 @@
   <div class="filter-wrapper">
     <div class="filter-bar" id="filterBar">
       <button class="filter-btn active" onclick="filterEvents('all', this)">すべて</button>
-      <button class="filter-btn" onclick="filterEvents('online', this)">オンライン</button>
-      <button class="filter-btn" onclick="filterEvents('offline', this)">対面</button>
       <button class="filter-btn" id="appliedFilterBtn" style="display:none" onclick="filterEvents('applied', this)">予約済み</button>
-    </div>
-    <div class="filter-footer">
-      <button id="backBtn" onclick="backToCalendar()" style="display:none;align-items:center;gap:6px;background:none;border:none;color:var(--green);font-size:13px;font-weight:700;cursor:pointer;padding:4px 0;font-family:'Noto Sans JP',sans-serif;">‹ カレンダーに戻る</button>
     </div>
   </div>
 
@@ -1282,7 +1277,6 @@
     if (sb) sb.style.display = 'none';
     document.getElementById('listHeaderTitle').textContent = '開催予定の説明会';
     document.querySelector('.filter-wrapper').style.display = '';
-    document.getElementById('backBtn').style.display = 'flex';
     document.getElementById('floatingBackBtn').style.display = 'flex';
 
     const container = document.getElementById('mainContainer');
@@ -1317,7 +1311,6 @@
 
   function backToCalendar() {
     document.getElementById('mainContainer').style.display = 'none';
-    document.getElementById('backBtn').style.display = 'none';
     document.getElementById('floatingBackBtn').style.display = 'none';
     document.querySelector('.calendar-section').style.display = 'block';
     const sb2 = document.getElementById('specialBanner');
