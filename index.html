@@ -146,7 +146,14 @@
 
     .filter-btn.active { background: var(--green); color: white; border-color: var(--green); }
 
-    .filter-wrapper { margin-bottom: 24px; }
+    .filter-wrapper {
+      margin-bottom: 24px;
+      position: sticky;
+      top: 60px;
+      z-index: 90;
+      background: var(--cream);
+      padding: 8px 0 4px;
+    }
 
     .filter-footer { display: flex; justify-content: flex-end; }
 
@@ -501,7 +508,7 @@
 
     /* ===== カレンダー ===== */
     .calendar-section {
-      background: #f2f9f5;
+      background: var(--white);
       border-radius: 12px;
       padding: 12px 4px;
       margin: 0 4px 16px;
@@ -593,7 +600,7 @@
 <nav>
   <div class="logo">
     ファーマカレンダー
-    <span>薬学生専用</span>
+    <span>薬学生専用就活カレンダー</span>
   </div>
   <div class="nav-right" id="navRight">
     <button class="btn btn-outline" onclick="openModal('login')">ログイン</button>
