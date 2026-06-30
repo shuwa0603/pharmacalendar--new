@@ -1162,8 +1162,8 @@
   let calMonth = _today.getMonth(); // 0-indexed
 
   function shortCompany(name) {
-    return name.replace(/^(株式会社|有限会社|合同会社|一般社団法人|医療法人|社会福祉法人)\s*/,'')
-               .replace(/\s*(株式会社|有限会社|合同会社)$/,'');
+    return name.replace(/^(\(株\)|\(有\)|\(合\)|株式会社|有限会社|合同会社|一般社団法人|医療法人|社会福祉法人)\s*/,'')
+               .replace(/\s*(\(株\)|\(有\)|\(合\)|株式会社|有限会社|合同会社)$/,'');
   }
 
   function renderCalendar() {
