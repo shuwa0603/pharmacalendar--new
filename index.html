@@ -1135,7 +1135,7 @@
       for (const e of events) {
         const _d = new Date(e.date); const dateStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
         if (dateStr !== lastDate) {
-          html += `<div id="date-${dateStr}" style="scroll-margin-top:72px"></div>`;
+          html += `<div id="date-${dateStr}" style="scroll-margin-top:116px"></div>`;
           lastDate = dateStr;
         }
         html += renderEventCard(e);
@@ -1355,7 +1355,7 @@
       for (const e of events) {
         const _d = new Date(e.date); const dateStr = `${_d.getFullYear()}-${String(_d.getMonth()+1).padStart(2,'0')}-${String(_d.getDate()).padStart(2,'0')}`;
         if (dateStr !== lastDate) {
-          html += `<div id="date-${dateStr}" style="scroll-margin-top:72px"></div>`;
+          html += `<div id="date-${dateStr}" style="scroll-margin-top:116px"></div>`;
           lastDate = dateStr;
         }
         html += renderEventCard(e);
