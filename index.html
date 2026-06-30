@@ -146,6 +146,23 @@
 
     .filter-btn.active { background: var(--green); color: white; border-color: var(--green); }
 
+    .univ-search-wrap { position: relative; }
+    .univ-search-wrap input[type="text"] {
+      width: 100%; padding: 10px 12px; border: 1px solid #d1d5db;
+      border-radius: 8px; font-size: 14px; box-sizing: border-box;
+    }
+    .univ-dropdown {
+      display: none;
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0;
+      background: white; border: 1px solid #d1d5db; border-radius: 8px;
+      max-height: 200px; overflow-y: auto; z-index: 300;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .univ-option {
+      padding: 10px 14px; font-size: 14px; cursor: pointer; color: #374151;
+    }
+    .univ-option:hover { background: #f0fdf4; color: var(--green); }
+
     .filter-wrapper {
       margin-bottom: 24px;
       position: sticky;
@@ -707,74 +724,12 @@
     </div>
     <div class="form-group">
       <label>大学名</label>
-      <select id="signupUniv" onchange="document.getElementById('signupUnivOther').style.display=this.value==='その他'?'block':'none'">
-        <option value="">選択してください</option>
-        <option>愛知学院大学</option>
-        <option>医療創生大学</option>
-        <option>岩手医科大学</option>
-        <option>奥羽大学</option>
-        <option>大阪医科薬科大学</option>
-        <option>大阪大谷大学</option>
-        <option>大阪公立大学</option>
-        <option>大阪大学</option>
-        <option>岡山大学</option>
-        <option>金沢大学</option>
-        <option>北里大学</option>
-        <option>九州大学</option>
-        <option>九州保健福祉大学</option>
-        <option>京都大学</option>
-        <option>京都薬科大学</option>
-        <option>近畿大学</option>
-        <option>金城学院大学</option>
-        <option>岐阜薬科大学</option>
-        <option>熊本大学</option>
-        <option>慶應義塾大学</option>
-        <option>国際医療福祉大学</option>
-        <option>静岡県立大学</option>
-        <option>就実大学</option>
-        <option>湘南医療大学</option>
-        <option>昭和医科大学</option>
-        <option>昭和薬科大学</option>
-        <option>城西大学</option>
-        <option>鈴鹿医療科学大学</option>
-        <option>摂南大学</option>
-        <option>崇城大学</option>
-        <option>第一薬科大学</option>
-        <option>千葉大学</option>
-        <option>千葉科学大学</option>
-        <option>帝京大学</option>
-        <option>帝京平成大学</option>
-        <option>東京大学</option>
-        <option>東京薬科大学</option>
-        <option>東京理科大学</option>
-        <option>東邦大学</option>
-        <option>東北医科薬科大学</option>
-        <option>東北大学</option>
-        <option>徳島大学</option>
-        <option>徳島文理大学</option>
-        <option>富山大学</option>
-        <option>名古屋市立大学</option>
-        <option>長崎大学</option>
-        <option>長崎国際大学</option>
-        <option>日本大学</option>
-        <option>日本薬科大学</option>
-        <option>広島大学</option>
-        <option>広島国際大学</option>
-        <option>兵庫医科大学</option>
-        <option>兵庫医療大学</option>
-        <option>福岡大学</option>
-        <option>福岡薬科大学</option>
-        <option>北陸大学</option>
-        <option>星薬科大学</option>
-        <option>北海道医療大学</option>
-        <option>北海道大学</option>
-        <option>武庫川女子大学</option>
-        <option>武蔵野大学</option>
-        <option>名城大学</option>
-        <option>明治薬科大学</option>
-        <option>横浜薬科大学</option>
-        <option value="その他">その他</option>
-      </select>
+      <div class="univ-search-wrap">
+        <input type="text" id="univSearchInput" placeholder="大学名を検索する" autocomplete="off"
+               oninput="filterUnivList()" onfocus="showUnivDropdown()" onblur="hideUnivDropdown()">
+        <div class="univ-dropdown" id="univDropdown"></div>
+      </div>
+      <input type="hidden" id="signupUniv">
       <input type="text" id="signupUnivOther" placeholder="大学名を入力してください" style="display:none;margin-top:8px;width:100%;padding:10px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px">
     </div>
     <div class="form-group">
@@ -1534,6 +1489,56 @@
   // =============================================
   // 認証処理
   // =============================================
+  const UNIVERSITIES = [
+    '愛知学院大学','青森大学','安田女子大学','医療創生大学','岩手医科大学','奥羽大学',
+    '大阪医科薬科大学','大阪大谷大学','大阪公立大学','大阪大学','岡山大学',
+    '金沢大学','北里大学','北海道科学大学','北海道医療大学','北海道大学',
+    '岐阜医療科学大学','岐阜薬科大学','九州大学','九州保健福祉大学',
+    '京都大学','京都薬科大学','近畿大学','金城学院大学','熊本大学','慶應義塾大学',
+    '国際医療福祉大学','神戸学院大学','神戸薬科大学','高崎健康福祉大学',
+    '崇城大学','静岡県立大学','就実大学',
+    '城西大学','城西国際大学','順天堂大学','昭和医科大学','昭和薬科大学','湘南医療大学',
+    '鈴鹿医療科学大学','摂南大学',
+    '第一薬科大学','千葉大学','千葉科学大学',
+    '帝京大学','帝京平成大学','東京大学','東京薬科大学','東京理科大学','東邦大学',
+    '東北医科薬科大学','東北大学','同志社女子大学','徳島大学','徳島文理大学','富山大学',
+    '名古屋市立大学','長崎大学','長崎国際大学','新潟薬科大学','日本大学','日本薬科大学',
+    '広島大学','広島国際大学','兵庫医科大学','兵庫医療大学','姫路獨協大学',
+    '福岡大学','福岡薬科大学','福山大学','北陸大学','星薬科大学','松山大学',
+    '名城大学','明治薬科大学','武庫川女子大学','武蔵野大学',
+    '山口東京理科大学','横浜薬科大学','和歌山県立医科大学','立命館大学',
+    'その他'
+  ];
+
+  function filterUnivList() {
+    const q = document.getElementById('univSearchInput').value;
+    const list = q ? UNIVERSITIES.filter(u => u.includes(q)) : UNIVERSITIES;
+    renderUnivDropdown(list);
+  }
+
+  function renderUnivDropdown(list) {
+    const dd = document.getElementById('univDropdown');
+    dd.innerHTML = list.map(u => `<div class="univ-option" onmousedown="selectUniv('${u}')">${u}</div>`).join('');
+    dd.style.display = list.length ? 'block' : 'none';
+  }
+
+  function showUnivDropdown() {
+    const q = document.getElementById('univSearchInput').value;
+    const list = q ? UNIVERSITIES.filter(u => u.includes(q)) : UNIVERSITIES;
+    renderUnivDropdown(list);
+  }
+
+  function hideUnivDropdown() {
+    setTimeout(() => { document.getElementById('univDropdown').style.display = 'none'; }, 150);
+  }
+
+  function selectUniv(name) {
+    document.getElementById('univSearchInput').value = name;
+    document.getElementById('signupUniv').value = name;
+    document.getElementById('univDropdown').style.display = 'none';
+    document.getElementById('signupUnivOther').style.display = name === 'その他' ? 'block' : 'none';
+  }
+
   async function handleSignup() {
     const email = document.getElementById('signupEmail').value;
     const password = document.getElementById('signupPassword').value;
