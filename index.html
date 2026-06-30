@@ -1196,8 +1196,9 @@
       const prevDate = new Date(calYear, calMonth - 1, prevDay);
       const prevDateStr = prevDate.toISOString().split('T')[0];
       const prevEvs = eventsByDateStr[prevDateStr] || [];
-      const prevChips = prevEvs.slice(0, 3).map(e =>
-        `<div class="cal-event-chip" style="opacity:0.6">${shortCompany(e.company)}</div>`
+      const prevUniq = [...new Set(prevEvs.map(e => shortCompany(e.company)))].slice(0, 3);
+      const prevChips = prevUniq.map(name =>
+        `<div class="cal-event-chip" style="opacity:0.6">${name}</div>`
       ).join('');
       html += `<div class="cal-cell other-month" onclick="scrollToDate('${prevDateStr}')">
         <div class="cal-day-num">${prevDay}</div>${prevChips}
@@ -1210,8 +1211,9 @@
       const hasEvent = dayEvs.length > 0;
       const classes  = ['cal-cell', isToday ? 'today' : '', hasEvent ? 'has-event' : ''].filter(Boolean).join(' ');
 
-      const chips = dayEvs.slice(0, 3).map(e =>
-        `<div class="cal-event-chip">${shortCompany(e.company)}</div>`
+      const uniqNames = [...new Set(dayEvs.map(e => shortCompany(e.company)))].slice(0, 3);
+      const chips = uniqNames.map(name =>
+        `<div class="cal-event-chip">${name}</div>`
       ).join('');
 
       html += `<div class="${classes}" onclick="scrollToDate('${dateStr}')">
