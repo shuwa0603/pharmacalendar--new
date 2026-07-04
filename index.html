@@ -17,181 +17,269 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{
-      /* 新デザインパレット（旧変数名も同じ色にマッピングして互換維持） */
-      --pine:#10382C;--pine-deep:#0B2A21;--mint:#EAF4EC;--paper:#F7FAF7;
-      --card:#FFFFFF;--ink:#1B2A24;--ink-soft:#5B6E64;--line:#DCE8DE;
-      --amber:#B8860B;--amber-pale:#FBF3DC;
-      --green:#10382C;
-      --green-light:#1A5741;
-      --green-pale:#EAF4EC;
-      --cream:#F7FAF7;
-      --dark:#1B2A24;
-      --gray:#5B6E64;
-      --border:#DCE8DE;
-      --white:#FFFFFF;
-      --drug:#1e5fa8;
-      --drug-pale:#e8f0fb;
-      --pharmacy:#10382C;
-      --pharmacy-pale:#EAF4EC;
-      --pharma:#c0392b;
-      --pharma-pale:#fdecea;
+      --pine:#10382C;
+      --pine-deep:#0B2A21;
+      --mint:#EAF4EC;
+      --paper:#F7FAF7;
+      --card:#FFFFFF;
+      --ink:#1B2A24;
+      --ink-soft:#5B6E64;
+      --line:#DCE8DE;
+      --chip-bg:#E3F1E7;
+      --chip-tx:#1E5C43;
+      /* カテゴリ色 */
+      --drug:#1e5fa8;      --drug-pale:#e8f0fb;
+      --pharmacy:#10382C;  --pharmacy-pale:#EAF4EC;
+      --pharma:#c0392b;    --pharma-pale:#fdecea;
+      /* 旧変数の互換 */
+      --green:#10382C; --green-light:#1A5741; --green-pale:#EAF4EC;
+      --gray:#5B6E64; --border:#DCE8DE; --white:#FFFFFF; --dark:#1B2A24;
     }
     *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
     html{scroll-behavior:smooth}
-    body{font-family:"Zen Kaku Gothic New",sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;min-height:100vh;overscroll-behavior-y:none}
+    body{
+      font-family:"Zen Kaku Gothic New",sans-serif;
+      background:var(--paper);
+      color:var(--ink);
+      line-height:1.6;
+      min-height:100vh;
+      overscroll-behavior-y:none;
+    }
     .num{font-family:"Outfit","Zen Kaku Gothic New",sans-serif}
 
-    /* ================= 固定ヘッダー(3段) ================= */
-    .top{position:sticky;top:0;z-index:100;background:rgba(247,250,247,.93);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-    .bar{max-width:640px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:10px 16px 6px;gap:8px}
-    .logo{display:flex;align-items:center;gap:8px;text-decoration:none;min-width:0}
-    .logo-mark{width:31px;height:31px;border-radius:9px;background:var(--pine);display:grid;place-items:center;flex-shrink:0}
-    .logo-mark svg{width:16px;height:16px}
-    .logo-text b{font-size:14px;font-weight:900;color:var(--pine);display:block;line-height:1.1;white-space:nowrap}
-    .logo-text span{font-size:9px;color:var(--ink-soft);font-weight:500;white-space:nowrap}
-    .nav-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-
-    .btn{font-family:inherit;font-weight:700;font-size:12px;border-radius:999px;padding:8px 14px;cursor:pointer;border:none;background:var(--pine);color:#fff;transition:.15s;white-space:nowrap}
-    .btn:hover{background:var(--pine-deep)}
+    /* ---------- header ---------- */
+    header{
+      position:sticky;top:0;z-index:50;
+      background:rgba(247,250,247,.88);
+      backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--line);
+    }
+    .header-inner{
+      max-width:960px;margin:0 auto;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:12px 16px;gap:8px;
+    }
+    .logo{display:flex;align-items:center;gap:9px;text-decoration:none;min-width:0}
+    .logo-mark{
+      width:34px;height:34px;border-radius:10px;
+      background:var(--pine);
+      display:grid;place-items:center;flex-shrink:0;
+    }
+    .logo-mark svg{width:18px;height:18px}
+    .logo-text{line-height:1.15;min-width:0}
+    .logo-text b{font-size:15px;font-weight:900;color:var(--pine);letter-spacing:.02em;display:block;white-space:nowrap}
+    .logo-text span{font-size:10px;color:var(--ink-soft);font-weight:500;white-space:nowrap}
+    .header-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+    .btn{
+      font-family:inherit;font-weight:700;font-size:13px;
+      border-radius:999px;padding:9px 16px;cursor:pointer;
+      border:1.5px solid transparent;transition:.18s;white-space:nowrap;
+    }
+    .btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+    .btn-ghost:hover{border-color:var(--pine);color:var(--pine)}
+    .btn-solid,.btn-primary{background:var(--pine);color:#fff}
+    .btn-solid:hover,.btn-primary:hover{background:var(--pine-deep)}
+    .btn-outline{background:transparent;border-color:var(--line);color:var(--ink)}
+    .btn-outline:hover{border-color:var(--pine);color:var(--pine)}
     .btn:focus-visible{outline:3px solid #2E8B62;outline-offset:2px}
-    .btn-primary{background:var(--pine);color:#fff}
-    .btn-primary:hover{background:var(--pine-deep)}
-    .btn-outline{background:transparent;border:1.5px solid var(--line);color:var(--ink)}
-    .btn-outline:hover{border-color:var(--pine);color:var(--pine);background:transparent}
+    .user-info{display:flex;align-items:center;gap:8px;min-width:0}
+    .user-info span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:96px;font-size:12px;font-weight:700}
+    .user-avatar{width:30px;height:30px;border-radius:50%;background:var(--pine);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
 
-    /* 日付ストリップ */
-    .strip{max-width:640px;margin:0 auto;display:flex;gap:5px;overflow-x:auto;padding:5px 16px 8px;scrollbar-width:none}
-    .strip::-webkit-scrollbar{display:none}
-    .pill{
-      flex-shrink:0;width:48px;border:1.5px solid transparent;border-radius:14px;
-      background:transparent;padding:7px 0 6px;cursor:pointer;font-family:inherit;
-      display:flex;flex-direction:column;align-items:center;gap:1px;transition:.15s;
+    /* ---------- hero ---------- */
+    .hero{
+      background:
+        radial-gradient(1200px 500px at 85% -20%, rgba(46,139,98,.35), transparent 60%),
+        var(--pine);
+      color:#fff;
+      padding:36px 16px 80px;
+      position:relative;
+      overflow:hidden;
     }
-    .pill .dw{font-size:9.5px;font-weight:700;color:var(--ink-soft)}
-    .pill .dn{font-size:17px;font-weight:700;color:var(--ink);line-height:1.15}
-    .pill .ct{font-size:8.5px;font-weight:800;color:#2E8B62;min-height:12px;line-height:1.3}
-    .pill.sun .dw{color:#C25B4A}.pill.sat .dw{color:#3D6FB5}
-    .pill.is-empty{opacity:.4;cursor:default}
-    .pill.is-active{background:#fff;border-color:var(--line);box-shadow:0 3px 10px -5px rgba(16,56,44,.3)}
-    .pill.is-today .dn{background:var(--pine);color:#fff;border-radius:50%;width:26px;height:26px;display:grid;place-items:center;font-size:14px}
-    .pill:focus-visible{outline:3px solid #2E8B62;outline-offset:2px}
-    .mdiv{
-      flex-shrink:0;display:flex;align-items:center;justify-content:center;
-      font-size:10px;font-weight:800;color:var(--pine);
-      background:var(--mint);border-radius:10px;padding:0 8px;margin:6px 2px;
-      white-space:nowrap;
+    .hero::after{
+      content:"";position:absolute;inset:0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+      background-size:56px 56px;
+      pointer-events:none;
     }
-
-    /* フィルター */
-    .filters{max-width:640px;margin:0 auto;display:flex;gap:5px;overflow-x:auto;padding:0 16px 10px;scrollbar-width:none}
-    .filters::-webkit-scrollbar{display:none}
-    .chip{
-      flex-shrink:0;font-family:inherit;font-size:11px;font-weight:700;
-      border:1.5px solid var(--line);border-radius:999px;
-      background:#fff;color:var(--ink-soft);padding:6px 12px;cursor:pointer;transition:.12s;
+    .hero-inner{max-width:960px;margin:0 auto;position:relative;z-index:1}
+    .hero-eyebrow{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:11px;font-weight:700;letter-spacing:.14em;
+      color:#BFE3CD;
+      border:1px solid rgba(191,227,205,.4);
+      border-radius:999px;padding:5px 12px;margin-bottom:16px;
     }
-    .chip.on{background:var(--pine);border-color:var(--pine);color:#fff}
-    .chip.sep{border:none;background:transparent;width:1px;padding:0;margin:0 2px;border-left:1px solid var(--line);border-radius:0;cursor:default}
-    .chip:focus-visible{outline:3px solid #2E8B62;outline-offset:2px}
+    .hero-eyebrow::before{content:"";width:6px;height:6px;border-radius:50%;background:#5FD49A}
+    .hero h1{
+      font-size:clamp(30px,7.5vw,46px);
+      font-weight:900;line-height:1.28;letter-spacing:.01em;
+      margin-bottom:12px;
+    }
+    .hero h1 .accent{color:#8FE0B4}
+    .hero p{font-size:14px;color:#CFE4D6;max-width:32em;font-weight:500}
 
-    /* ================= フィード ================= */
-    .feed{max-width:640px;margin:0 auto;padding:14px 16px 80px}
-
-    .pickup{background:linear-gradient(120deg,var(--pine),#1A5741);border-radius:16px;color:#fff;padding:14px 15px;margin-bottom:18px;display:flex;align-items:center;gap:12px;justify-content:space-between;box-shadow:0 12px 28px -16px rgba(16,56,44,.55);cursor:pointer}
-    .pickup.drug{background:linear-gradient(120deg,#173D66,#1e5fa8)}
-    .pickup-label{font-size:9.5px;font-weight:800;letter-spacing:.16em;color:#8FE0B4;display:block;margin-bottom:3px}
+    /* ---------- pickup banner (hero内) ---------- */
+    .pickup-card{
+      margin-top:24px;
+      background:#fff;
+      border-radius:18px;color:var(--ink);
+      padding:16px 16px;
+      display:flex;align-items:center;gap:14px;justify-content:space-between;
+      box-shadow:0 14px 34px -16px rgba(0,0,0,.4);
+      cursor:pointer;
+    }
+    .pickup-label{
+      font-size:10px;font-weight:800;letter-spacing:.16em;
+      color:#1E5C43;display:inline-flex;align-items:center;gap:5px;margin-bottom:5px;
+    }
+    .pickup-card b{font-size:16px;font-weight:800;line-height:1.4;display:block}
+    .pickup-card p{font-size:12px;color:var(--ink-soft);margin-top:3px}
     .pickup-main{min-width:0}
-    .pickup b{font-size:14.5px;font-weight:900;display:block;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .pickup p{font-size:11px;color:#BFDCC9;margin-top:2px}
-    .pickup-btn{flex-shrink:0;font-family:inherit;font-size:11.5px;font-weight:700;background:#fff;color:var(--pine);border:none;border-radius:999px;padding:9px 14px;cursor:pointer;transition:.15s;white-space:nowrap}
-    .pickup-btn:hover{transform:translateY(-1px)}
-
-    .day-sec{margin-bottom:16px;scroll-margin-top:150px}
-    .day-head{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;padding-left:2px}
-    .day-head .dnum{font-size:20px;font-weight:800;line-height:1}
-    .day-head .dmon{font-size:12px;font-weight:800;color:var(--ink-soft)}
-    .day-head .dmeta{font-size:11.5px;font-weight:700;color:var(--ink-soft)}
-    .day-head .badge{font-size:9.5px;font-weight:800;color:var(--pine-deep);background:var(--mint);border-radius:999px;padding:3px 9px}
-    .day-head.sun .dnum{color:#C25B4A}.day-head.sat .dnum{color:#3D6FB5}
-
-    .ev{
-      display:flex;gap:12px;background:var(--card);
-      border:1px solid var(--line);border-radius:16px;
-      padding:12px 13px;margin-bottom:7px;transition:.15s;cursor:pointer;
+    .pickup-btn{
+      flex-shrink:0;font-family:inherit;font-size:12.5px;font-weight:700;
+      background:var(--pine);color:#fff;border:none;border-radius:999px;
+      padding:10px 16px;cursor:pointer;transition:.15s;white-space:nowrap;
     }
-    .ev:hover{box-shadow:0 8px 20px -14px rgba(16,56,44,.4)}
-    .ev-time{flex-shrink:0;width:46px;text-align:center;padding-top:1px}
-    .ev-time b{font-size:14px;font-weight:700;line-height:1.15;display:block}
-    .ev-time span{font-size:9px;color:var(--ink-soft);font-weight:600}
-    .ev-main{flex:1;min-width:0}
-    .ev-main .name{font-size:13.5px;font-weight:800;line-height:1.45;display:block}
-    .ev-main .ttl{font-size:11px;font-weight:500;color:var(--ink-soft);line-height:1.5;display:block;margin-top:1px}
-    .ev-tags{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
-    .tag{font-size:9.5px;font-weight:700;border-radius:5px;padding:2.5px 7px}
-    .tag.online{background:var(--mint);color:var(--pine-deep)}
-    .tag.offline{background:var(--amber-pale);color:var(--amber)}
-    .tag.plain{background:#EEF1ED;color:var(--ink-soft)}
-    .tag.cat-drug{background:var(--drug-pale);color:var(--drug)}
-    .tag.cat-pharmacy{background:var(--mint);color:var(--pine-deep)}
-    .tag.cat-pharma{background:var(--pharma-pale);color:var(--pharma)}
-    .ev-side{align-self:center;flex-shrink:0;display:flex;justify-content:center;min-width:76px}
+    .pickup-btn:hover{background:var(--pine-deep)}
 
+    /* ---------- calendar card ---------- */
+    .cal-wrap{max-width:960px;margin:-48px auto 0;padding:0 12px;position:relative;z-index:2}
+    .cal-card{
+      background:var(--card);
+      border-radius:22px;
+      border:1px solid var(--line);
+      box-shadow:0 20px 50px -24px rgba(16,56,44,.35);
+      overflow:hidden;
+    }
+    .cal-head{
+      display:flex;align-items:center;justify-content:space-between;
+      padding:16px 16px 10px;
+    }
+    .cal-title{display:flex;align-items:baseline;gap:8px}
+    .cal-title .yr{font-size:13px;font-weight:600;color:var(--ink-soft)}
+    .cal-title .mo{font-size:26px;font-weight:800;color:var(--pine)}
+    .cal-nav{display:flex;gap:6px}
+    .cal-nav button{
+      width:34px;height:34px;border-radius:10px;
+      border:1.5px solid var(--line);background:#fff;color:var(--ink);
+      font-size:15px;cursor:pointer;transition:.15s;
+    }
+    .cal-nav button:hover{border-color:var(--pine);color:var(--pine)}
+
+    /* grid */
+    .grid{
+      display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+      border-top:1px solid var(--line);
+    }
+    .dow{
+      font-size:11px;font-weight:700;text-align:center;
+      color:var(--ink-soft);padding:9px 0;
+      background:var(--paper);
+      border-bottom:1px solid var(--line);
+    }
+    .dow.sun{color:#C25B4A}
+    .dow.sat{color:#3D6FB5}
+    .cell{
+      min-height:78px;
+      min-width:0;
+      border-bottom:1px solid var(--line);
+      border-right:1px solid var(--line);
+      padding:6px 3px 7px;
+      background:#fff;
+      cursor:default;
+      transition:background .15s;
+      font-family:inherit;
+      display:flex;flex-direction:column;align-items:center;gap:4px;
+    }
+    .cell:nth-child(7n){border-right:none}
+    .cell.has-ev{cursor:pointer}
+    .cell.has-ev:hover{background:var(--mint)}
+    .cell.is-selected{background:var(--mint)}
+    .cell .d{
+      font-size:15px;font-weight:600;line-height:1;
+      width:26px;height:26px;border-radius:50%;
+      display:grid;place-items:center;flex-shrink:0;
+    }
+    .cell.is-other{cursor:default}
+    .cell.is-other .d{color:#C4CFC7}
+    .cell.is-today .d{background:var(--pine);color:#fff;font-weight:700}
+    .cell.sun .d{color:#C25B4A}
+    .cell.sat .d{color:#3D6FB5}
+    .cell.is-today.sun .d,.cell.is-today.sat .d{color:#fff}
+    .evchips{display:flex;flex-direction:column;gap:3px;width:100%}
+    .evchip{
+      font-size:9.5px;font-weight:700;color:var(--chip-tx);
+      background:var(--chip-bg);
+      border-radius:6px;padding:2.5px 2px;
+      width:100%;
+      white-space:nowrap;overflow:hidden;text-overflow:clip;
+      text-align:center;line-height:1.4;
+    }
+    .evchip.cat-drug{color:var(--drug);background:var(--drug-pale)}
+    .evchip.cat-pharma{color:var(--pharma);background:var(--pharma-pale)}
+    .evchip.more{color:var(--ink-soft);background:transparent;font-weight:800}
+    .cell:focus-visible{outline:3px solid #2E8B62;outline-offset:-3px;z-index:1}
+
+    /* day panel */
+    .panel{
+      border-top:1px solid var(--line);
+      background:var(--paper);
+      padding:14px 16px 16px;
+    }
+    .panel-date{font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:8px}
+    .panel-empty{font-size:13px;color:var(--ink-soft)}
+    .ev{
+      display:flex;align-items:center;gap:11px;
+      background:#fff;border:1px solid var(--line);
+      border-radius:14px;padding:11px 12px;margin-bottom:8px;cursor:pointer;
+    }
+    .ev:last-child{margin-bottom:0}
+    .ev-bar{width:4px;align-self:stretch;border-radius:99px;flex-shrink:0;background:var(--pine)}
+    .ev-bar.cat-drug{background:var(--drug)}
+    .ev-bar.cat-pharma{background:var(--pharma)}
+    .ev-body{flex:1;min-width:0}
+    .ev-body b{font-size:13.5px;font-weight:700;display:block;line-height:1.4}
+    .ev-body .et{font-size:12px;color:var(--ink);font-weight:500;display:block;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .ev-body span.meta{font-size:11.5px;color:var(--ink-soft);display:block}
     .ev-cta{
-      font-family:inherit;font-size:12px;font-weight:700;
-      color:#fff;background:var(--pine);border:none;border-radius:999px;
-      padding:9px 14px;cursor:pointer;transition:.15s;white-space:nowrap;
+      font-family:inherit;font-size:11.5px;font-weight:700;
+      color:#fff;background:var(--pine);
+      border:none;border-radius:999px;padding:8px 14px;cursor:pointer;
+      flex-shrink:0;transition:.15s;white-space:nowrap;
     }
     .ev-cta:hover{background:var(--pine-deep)}
-    .ev-cta:focus-visible{outline:3px solid #2E8B62;outline-offset:2px}
     .ev-cta.cat-drug{background:var(--drug)}
     .ev-cta.cat-pharma{background:var(--pharma)}
-
-    .btn-applied{
-      font-family:inherit;font-size:11px;font-weight:700;
-      border:2px solid var(--line);border-radius:999px;
-      background:#fff;color:var(--pine);padding:8px 12px;cursor:default;white-space:nowrap;
-      display:inline-flex;align-items:center;justify-content:center;gap:4px;
+    .ev-state{
+      font-family:inherit;font-size:11.5px;font-weight:700;
+      border-radius:999px;padding:8px 14px;flex-shrink:0;white-space:nowrap;
+      display:inline-flex;align-items:center;gap:4px;
     }
-    .btn-full{
-      font-family:inherit;font-size:11px;font-weight:700;
-      border:none;border-radius:999px;
-      background:#EEF1ED;color:#9CA8A0;padding:9px 12px;cursor:default;white-space:nowrap;
-      display:inline-flex;align-items:center;justify-content:center;gap:4px;
-    }
-    .btn-cancel{
-      font-family:inherit;font-size:11px;font-weight:700;
-      border:none;border-radius:999px;
-      background:#fee2e2;color:#991b1b;padding:9px 14px;cursor:pointer;white-space:nowrap;
-      display:inline-flex;align-items:center;justify-content:center;gap:4px;transition:.15s;
-    }
-    .btn-cancel:hover{opacity:.85}
+    .ev-state.applied{background:#fff;border:2px solid var(--line);color:var(--pine)}
+    .ev-state.full{background:#EEF1ED;color:#9CA8A0}
 
-    /* 開催なしの日 */
-    .gap{
-      display:flex;align-items:center;gap:10px;
-      margin:0 2px 14px;
-      font-size:10.5px;font-weight:600;color:#AAB8AE;
+    footer{
+      max-width:960px;margin:36px auto 0;padding:20px 16px 34px;
+      border-top:1px solid var(--line);
+      font-size:11.5px;color:var(--ink-soft);
+      display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;
     }
-    .gap::before,.gap::after{content:"";height:1px;flex:1;background:var(--line)}
 
-    .feed-end{text-align:center;font-size:12px;color:var(--ink-soft);padding:16px 0 4px;font-weight:500}
-    .no-result{text-align:center;padding:30px 0;font-size:12.5px;color:var(--ink-soft);font-weight:600}
-
-    /* 今日へ戻るFAB */
-    .fab{
-      position:fixed;bottom:20px;right:16px;z-index:90;
-      font-family:inherit;font-size:12px;font-weight:800;
-      color:#fff;background:var(--pine);border:none;border-radius:999px;
-      padding:12px 18px;cursor:pointer;
-      box-shadow:0 10px 24px -8px rgba(16,56,44,.6);
-      opacity:0;pointer-events:none;transition:.2s;
+    @media (min-width:640px){
+      .cell{min-height:96px}
+      .evchip{font-size:11px;padding:3px 4px}
+      .hero{padding:52px 16px 96px}
     }
-    .fab.show{opacity:1;pointer-events:auto}
-    .fab:hover{background:var(--pine-deep)}
-    .fab:focus-visible{outline:3px solid #2E8B62;outline-offset:2px}
-
-    footer{max-width:640px;margin:0 auto;padding:18px 16px 34px;border-top:1px solid var(--line);font-size:11.5px;color:var(--ink-soft);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
-    @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+    @media (max-width:480px){
+      .pickup-card{flex-direction:column;align-items:flex-start;gap:10px}
+      .pickup-btn{align-self:stretch}
+    }
+    @media (prefers-reduced-motion:reduce){
+      *{transition:none!important;scroll-behavior:auto!important}
+    }
 
     /* ================= モーダル・フォーム ================= */
     .modal-overlay{
@@ -235,13 +323,6 @@
     .univ-option{padding:10px 14px;font-size:14px;cursor:pointer;color:var(--ink)}
     .univ-option:hover{background:var(--mint);color:var(--pine)}
 
-    .user-info{display:flex;align-items:center;gap:8px;min-width:0}
-    .user-info span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px}
-    .user-avatar{
-      width:28px;height:28px;border-radius:50%;background:var(--pine);color:#fff;
-      display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;
-    }
-
     .category-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;margin-left:6px;vertical-align:middle}
     .badge-drug{background:var(--drug-pale);color:var(--drug)}
     .badge-pharmacy{background:var(--mint);color:var(--pine-deep)}
@@ -253,6 +334,17 @@
       margin-bottom:20px;white-space:pre-wrap;
     }
     .detail-no-desc{color:var(--ink-soft);font-size:13px;margin-bottom:20px}
+    .detail-btn{
+      width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:12px;
+      font-family:inherit;font-weight:700;border:none;cursor:pointer;
+      display:inline-flex;align-items:center;gap:4px;
+    }
+    .detail-btn.apply{background:var(--pine);color:#fff}
+    .detail-btn.apply.cat-drug{background:var(--drug)}
+    .detail-btn.apply.cat-pharma{background:var(--pharma)}
+    .detail-btn.applied{background:#fff;border:2px solid var(--line);color:var(--pine)}
+    .detail-btn.full{background:#EEF1ED;color:#9CA8A0}
+    .detail-btn.cancel{background:#fee2e2;color:#991b1b}
 
     #applyModal .modal{max-width:440px}
     .apply-event-summary{
@@ -288,36 +380,54 @@
     #doneModal .modal{text-align:center}
     #doneModal h2{margin-bottom:8px}
     #doneModal .done-sub{font-size:13px;color:var(--ink-soft);margin-bottom:20px}
-
-    .modal .btn-applied,.modal .btn-full,.modal .btn-cancel,.modal .ev-cta{width:100%;justify-content:center;padding:12px;font-size:14px;border-radius:12px}
   </style>
 </head>
 <body>
 
-<div class="top">
-  <div class="bar">
+<header>
+  <div class="header-inner">
     <a class="logo" href="#" onclick="return false">
       <span class="logo-mark" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="3" stroke="#8FE0B4" stroke-width="2"/><path d="M3 10h18" stroke="#8FE0B4" stroke-width="2"/><path d="M8 3v4M16 3v4" stroke="#8FE0B4" stroke-width="2" stroke-linecap="round"/><path d="M12 13v4M10 15h4" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
       </span>
       <span class="logo-text"><b>ファーマカレンダー</b><span>薬学生専用 就活カレンダー</span></span>
     </a>
-    <div class="nav-right" id="navRight">
-      <button class="btn btn-outline" onclick="openModal('login')">ログイン</button>
-      <button class="btn btn-primary" onclick="openModal('signup')">新規登録</button>
+    <div class="header-actions" id="navRight">
+      <button class="btn btn-ghost" onclick="openModal('login')">ログイン</button>
+      <button class="btn btn-solid" onclick="openModal('signup')">新規登録</button>
     </div>
   </div>
-  <div class="strip" id="strip" aria-label="日付へ移動"></div>
-  <div class="filters" id="filters" aria-label="絞り込み"></div>
-</div>
+</header>
 
-<main class="feed">
-  <!-- スペシャルバナー（JSで動的に更新） -->
-  <div id="specialBanner" style="display:none"></div>
-  <div id="days"></div>
+<section class="hero">
+  <div class="hero-inner">
+    <span class="hero-eyebrow" id="heroEyebrow">掲載中</span>
+    <h1>薬学生の就活説明会、<br>ぜんぶ<span class="accent">この1枚</span>に。</h1>
+    <p>製薬・調剤薬局・ドラッグストアの合同・個別説明会をまとめて掲載。気になる日をタップして、そのまま予約まで。</p>
+
+    <!-- PICK UP バナー（JSで動的に更新） -->
+    <div id="specialBanner"></div>
+  </div>
+</section>
+
+<main class="cal-wrap">
+  <div class="cal-card">
+    <div class="cal-head">
+      <div class="cal-title"><span class="yr num" id="calYear"></span><span class="mo" id="calMonth"></span></div>
+      <div class="cal-nav">
+        <button aria-label="前の月" onclick="changeCalMonth(-1)">‹</button>
+        <button aria-label="次の月" onclick="changeCalMonth(1)">›</button>
+      </div>
+    </div>
+
+    <div class="grid" id="grid" role="grid" aria-label="説明会カレンダー"></div>
+
+    <div class="panel" id="panel">
+      <div class="panel-date" id="panel-date"></div>
+      <div id="panel-list"></div>
+    </div>
+  </div>
 </main>
-
-<button class="fab" id="fab" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑ 今日へ</button>
 
 <footer>
   <span>© 2026 ファーマカレンダー</span>
@@ -504,13 +614,12 @@
   });
 
   let currentUser = null;
-  let sessionToken = null; // ユーザーのaccess_token（直接管理）
+  let sessionToken = null;
   let allEvents = [];
   let eventsById = {};
   let appliedEventIds = new Set();
   let recoveryAccessToken = null;
 
-  // セッションをlocalStorageに保存・読み込み・削除するヘルパー
   const PHARMA_SESSION_KEY = 'pharma-user-session';
   function saveUserSession(authData) {
     try { localStorage.setItem(PHARMA_SESSION_KEY, JSON.stringify(authData)); } catch(e) {}
@@ -530,16 +639,13 @@
     try { localStorage.removeItem(PHARMA_SESSION_KEY); } catch(e) {}
   }
   let pendingApplyEvent = null;
-  let currentFilter = 'all';   // 'all' / 'applied'
-  let compFilter = null;       // 企業名（短縮名）or null
 
   const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
   const CATEGORY_LABEL = { drug: 'ドラッグストア', pharmacy: '調剤薬局', pharma: '製薬' };
 
   // =============================================
-  // 認証状態の監視
+  // 認証状態の監視（PASSWORD_RECOVERYのみ）
   // =============================================
-  // PASSWORD_RECOVERYのみ処理（セッション管理は自前で行う）
   db.auth.onAuthStateChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       recoveryAccessToken = session?.access_token || null;
@@ -548,7 +654,7 @@
   });
 
   // =============================================
-  // プロフィール保証（ログイン時にprofileがなければ作成）
+  // プロフィール保証
   // =============================================
   async function ensureProfile(user) {
     if (!sessionToken) return;
@@ -632,78 +738,16 @@
     document.getElementById('navRight').innerHTML = `
       <div class="user-info">
         <div class="user-avatar">${initial}</div>
-        <span style="font-size:12px;font-weight:700">${user.user_metadata?.name || user.email}</span>
+        <span>${user.user_metadata?.name || user.email}</span>
       </div>
       <button class="btn btn-outline" onclick="handleLogout()">ログアウト</button>
     `;
-    renderFilters();
   }
 
   function updateNavForLoggedOut() {
     document.getElementById('navRight').innerHTML = `
-      <button class="btn btn-outline" onclick="openModal('login')">ログイン</button>
-      <button class="btn btn-primary" onclick="openModal('signup')">新規登録</button>
-    `;
-    if (currentFilter === 'applied') currentFilter = 'all';
-    renderFilters();
-  }
-
-  // =============================================
-  // イベント取得（Supabase）
-  // =============================================
-  async function loadEvents() {
-    try {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/events?select=*&order=date.asc`,
-        {
-          headers: {
-            'apikey': EDGE_ANON_KEY,
-            'Authorization': `Bearer ${EDGE_ANON_KEY}`
-          }
-        }
-      );
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      const today = new Date(); today.setHours(0,0,0,0);
-      allEvents = (data || [])
-        .filter(e => { const d = new Date(e.date); d.setHours(0,0,0,0); return d >= today; })
-        .map(e => ({ ...e, formatKey: e.format || 'online' }));
-      eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
-    } catch (err) {
-      console.error('イベント取得エラー:', err);
-      allEvents = [];
-    }
-    renderList();
-    updateBanner();
-  }
-
-  // =============================================
-  // スペシャルバナー（PICK UP）
-  // =============================================
-  function updateBanner() {
-    const banner = document.getElementById('specialBanner');
-    if (!banner) return;
-    if (allEvents.length === 0) { banner.style.display = 'none'; return; }
-
-    const oneWeekLater = new Date(); oneWeekLater.setDate(oneWeekLater.getDate() + 7);
-    const featured = allEvents.find(e => new Date(e.date) >= oneWeekLater) || allEvents[0];
-    const d = new Date(featured.date);
-    const month = d.getMonth() + 1;
-    const day = d.getDate();
-    const weekday = WEEKDAYS[d.getDay()];
-    const location = featured.format === 'online' ? 'オンライン' : (featured.prefecture || 'オフライン');
-    const cat = featured.category || 'pharmacy';
-
-    banner.style.display = 'block';
-    banner.innerHTML = `
-      <div class="pickup ${cat === 'drug' ? 'drug' : ''}" onclick="openDetailModal('${featured.id}')">
-        <div class="pickup-main">
-          <span class="pickup-label">🎉 PICK UP</span>
-          <b>${featured.company}</b>
-          <p>${month}月${day}日（${weekday}）${location}開催</p>
-        </div>
-        <button class="pickup-btn" onclick="event.stopPropagation();openDetailModal('${featured.id}')">詳細を見る</button>
-      </div>
+      <button class="btn btn-ghost" onclick="openModal('login')">ログイン</button>
+      <button class="btn btn-solid" onclick="openModal('signup')">新規登録</button>
     `;
   }
 
@@ -718,18 +762,10 @@
                .replace(/\s*(\(株\)|\(有\)|\(合\)|株式会社|有限会社|合同会社)$/,'');
   }
 
-  // フィルター適用後のイベント
-  function filteredEvents() {
-    let list = allEvents;
-    if (currentFilter === 'applied') list = list.filter(e => appliedEventIds.has(e.id));
-    if (compFilter) list = list.filter(e => shortCompany(e.company) === compFilter);
-    return list;
-  }
-
-  // 日付文字列 → イベント配列 のマップ
-  function eventsByDay(list) {
+  // 日付文字列 → イベント配列
+  function buildEventsByDate() {
     const map = {};
-    list.forEach(e => {
+    allEvents.forEach(e => {
       const k = dateKey(new Date(e.date));
       if (!map[k]) map[k] = [];
       map[k].push(e);
@@ -738,218 +774,224 @@
   }
 
   // =============================================
-  // 日付ストリップ
+  // イベント取得（Supabase）
   // =============================================
-  function renderStrip() {
-    const strip = document.getElementById('strip');
-    strip.innerHTML = '';
-    if (allEvents.length === 0) return;
-
-    const byDay = eventsByDay(filteredEvents());
-    const today = new Date(); today.setHours(0,0,0,0);
-    const lastEvDate = new Date(allEvents[allEvents.length - 1].date); lastEvDate.setHours(0,0,0,0);
-    const maxDays = 120;
-
-    let d = new Date(today);
-    let count = 0;
-    let lastMonth = -1;
-    const todayKey = dateKey(today);
-    while (d <= lastEvDate && count < maxDays) {
-      const k = dateKey(d);
-      const w = d.getDay();
-      const n = (byDay[k] || []).length;
-
-      // 月が変わる位置に月ラベルを挟む
-      if (d.getMonth() !== lastMonth) {
-        const m = document.createElement('div');
-        m.className = 'mdiv';
-        m.textContent = `${d.getMonth() + 1}月`;
-        strip.appendChild(m);
-        lastMonth = d.getMonth();
-      }
-
-      const b = document.createElement('button');
-      b.className = 'pill' + (w===0?' sun':w===6?' sat':'') + (k===todayKey?' is-today':'') + (n?'':' is-empty');
-      b.id = 'pill-' + k;
-      b.innerHTML = `<span class="dw">${WEEKDAYS[w]}</span><span class="dn num">${d.getDate()}</span><span class="ct num">${n ? n + '件' : ''}</span>`;
-      b.setAttribute('aria-label', `${d.getMonth()+1}月${d.getDate()}日 説明会${n}件`);
-      if (n) {
-        b.onclick = () => document.getElementById('sec-' + k)?.scrollIntoView({ behavior: 'smooth' });
-      }
-      strip.appendChild(b);
-
-      d.setDate(d.getDate() + 1);
-      count++;
+  async function loadEvents() {
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/events?select=*&order=date.asc`,
+        { headers: { 'apikey': EDGE_ANON_KEY, 'Authorization': `Bearer ${EDGE_ANON_KEY}` } }
+      );
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const today = new Date(); today.setHours(0,0,0,0);
+      allEvents = (data || [])
+        .filter(e => { const d = new Date(e.date); d.setHours(0,0,0,0); return d >= today; })
+        .map(e => ({ ...e, formatKey: e.format || 'online' }));
+      eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
+    } catch (err) {
+      console.error('イベント取得エラー:', err);
+      allEvents = [];
     }
+    // 最初のイベントの月を初期表示にし、その日を選択
+    if (allEvents.length) {
+      const first = new Date(allEvents[0].date);
+      calYear = first.getFullYear();
+      calMonth = first.getMonth();
+      selectedKey = dateKey(first);
+    }
+    renderList();
+    updateBanner();
   }
 
   // =============================================
-  // フィルターチップ
+  // スペシャルバナー（PICK UP）
   // =============================================
-  function renderFilters() {
-    const wrap = document.getElementById('filters');
-    wrap.innerHTML = '';
+  function updateBanner() {
+    const banner = document.getElementById('specialBanner');
+    const eyebrow = document.getElementById('heroEyebrow');
+    if (!banner) return;
+    if (allEvents.length === 0) { banner.innerHTML = ''; return; }
 
-    const base = [['all', 'すべて']];
-    if (currentUser) base.push(['applied', '予約済み']);
-    base.forEach(([v, label]) => {
-      const b = document.createElement('button');
-      b.className = 'chip' + (currentFilter === v ? ' on' : '');
-      b.textContent = label;
-      b.setAttribute('aria-pressed', currentFilter === v);
-      b.onclick = () => { currentFilter = v; renderList(); };
-      wrap.appendChild(b);
-    });
-
-    // 企業チップ（掲載中の企業から自動生成）
-    const names = [];
-    allEvents.forEach(e => {
-      const n = shortCompany(e.company);
-      if (!names.includes(n)) names.push(n);
-    });
-    if (names.length) {
-      const sep = document.createElement('span');
-      sep.className = 'chip sep';
-      sep.setAttribute('aria-hidden', 'true');
-      wrap.appendChild(sep);
-      names.forEach(n => {
-        const b = document.createElement('button');
-        b.className = 'chip' + (compFilter === n ? ' on' : '');
-        b.textContent = n;
-        b.setAttribute('aria-pressed', compFilter === n);
-        b.onclick = () => { compFilter = (compFilter === n ? null : n); renderList(); };
-        wrap.appendChild(b);
-      });
-    }
-  }
-
-  // =============================================
-  // フィード（日ごとのイベント一覧）
-  // =============================================
-  function renderList() {
-    renderStrip();
-    renderFilters();
-
-    const daysEl = document.getElementById('days');
-    const list = filteredEvents();
-
-    if (list.length === 0) {
-      daysEl.innerHTML = '<div class="no-result">この条件の説明会はありません。<br>フィルターを解除してみてください。</div>';
-      return;
+    // ヒーローの「◯年◯月 掲載中」ラベル
+    if (eyebrow) {
+      const f = new Date(allEvents[0].date);
+      eyebrow.textContent = `${f.getFullYear()}年${f.getMonth()+1}月 掲載中`;
     }
 
-    const byDay = eventsByDay(list);
-    const today = new Date(); today.setHours(0,0,0,0);
-    const lastEvDate = new Date(list[list.length - 1].date); lastEvDate.setHours(0,0,0,0);
-    const todayKey = dateKey(today);
-    const maxDays = 120;
+    const oneWeekLater = new Date(); oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+    const featured = allEvents.find(e => new Date(e.date) >= oneWeekLater) || allEvents[0];
+    const d = new Date(featured.date);
+    const month = d.getMonth() + 1;
+    const day = d.getDate();
+    const weekday = WEEKDAYS[d.getDay()];
+    const location = featured.format === 'online' ? 'オンライン' : (featured.prefecture || 'オフライン');
 
-    let html = '';
-    let gapBuf = [];
-    const gapLabel = (d) => `${d.getMonth()+1}月${d.getDate()}日`;
-    const flushGap = () => {
-      if (!gapBuf.length) return;
-      const label = gapBuf.length === 1
-        ? `${gapLabel(gapBuf[0])}(${WEEKDAYS[gapBuf[0].getDay()]}) 開催なし`
-        : `${gapLabel(gapBuf[0])}〜${gapLabel(gapBuf[gapBuf.length-1])} 開催なし`;
-      html += `<div class="gap">${label}</div>`;
-      gapBuf = [];
-    };
-
-    let d = new Date(today);
-    let count = 0;
-    while (d <= lastEvDate && count < maxDays) {
-      const k = dateKey(d);
-      const evs = byDay[k] || [];
-      if (!evs.length) { gapBuf.push(new Date(d)); d.setDate(d.getDate() + 1); count++; continue; }
-      flushGap();
-      const w = d.getDay();
-      const isToday = k === todayKey;
-      const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
-      const isTomorrow = k === dateKey(tomorrow);
-      const badge = isToday ? '<span class="badge">今日</span>' : (isTomorrow ? '<span class="badge">明日</span>' : '');
-      html += `<section class="day-sec" id="sec-${k}" data-day="${k}">
-        <div class="day-head ${w===0?'sun':w===6?'sat':''}">
-          <span class="dnum num">${d.getDate()}</span><span class="dmon num">${d.getMonth()+1}月</span><span class="dmeta">${WEEKDAYS[w]}曜日</span>${badge}
+    banner.innerHTML = `
+      <div class="pickup-card" onclick="openDetailModal('${featured.id}')">
+        <div class="pickup-main">
+          <span class="pickup-label">🎉 PICK UP</span>
+          <b>${featured.company}</b>
+          <p>${month}月${day}日（${weekday}）${location}開催 ・ ${featured.title}</p>
         </div>
-        ${evs.map(e => renderEventCard(e)).join('')}
-      </section>`;
-      d.setDate(d.getDate() + 1);
-      count++;
-    }
-    flushGap();
-    html += '<div class="feed-end">開催予定の説明会はここまで。新しい説明会は順次公開されます 🌱</div>';
-    daysEl.innerHTML = html;
-    observeSections();
-  }
-
-  function renderEventCard(e) {
-    const d = new Date(e.date);
-    const cat = e.category || 'pharmacy';
-    const catLabel = CATEGORY_LABEL[cat] || cat;
-    const isApplied = appliedEventIds.has(e.id);
-    const isTimeUnknown = d.getHours() === 0 && d.getMinutes() === 0;
-    const timeMain = isTimeUnknown ? '未定' : `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`;
-    const timeSub = isTimeUnknown ? '時間' : (e.end_time ? `〜${e.end_time}` : '開始');
-
-    const isPastDeadline = e.deadline && new Date(e.deadline) < new Date();
-    const applyBtn = isApplied && currentFilter === 'applied'
-      ? `<button class="btn-cancel" onclick="event.stopPropagation();cancelApplication('${e.id}')">キャンセル</button>`
-      : isApplied
-        ? `<button class="btn-applied" onclick="event.stopPropagation()">✓ 申込済み</button>`
-        : e.is_full
-          ? `<button class="btn-full" onclick="event.stopPropagation()">満員</button>`
-          : isPastDeadline
-            ? `<button class="btn-full" style="cursor:not-allowed" onclick="event.stopPropagation()">締め切り済み</button>`
-            : currentUser
-              ? `<button class="ev-cta cat-${cat}" onclick="event.stopPropagation();openApplyModal('${e.id}')">予約する</button>`
-              : `<button class="ev-cta cat-${cat}" onclick="event.stopPropagation();openModal('login')">予約する</button>`;
-
-    const fmtTag = e.format === 'online'
-      ? '<span class="tag online">オンライン</span>'
-      : `<span class="tag offline">対面${e.prefecture ? '(' + e.prefecture + ')' : ''}</span>`;
-
-    return `
-      <article class="ev" onclick="openDetailModal('${e.id}')">
-        <div class="ev-time"><b class="num">${timeMain}</b><span>${timeSub}</span></div>
-        <div class="ev-main">
-          <span class="name">${e.company}</span>
-          <span class="ttl">${e.title}</span>
-          <div class="ev-tags">
-            ${fmtTag}
-            <span class="tag cat-${cat}">${catLabel}</span>
-          </div>
-        </div>
-        <div class="ev-side">${applyBtn}</div>
-      </article>
+        <button class="pickup-btn" onclick="event.stopPropagation();openDetailModal('${featured.id}')">詳細を見る →</button>
+      </div>
     `;
   }
 
   // =============================================
-  // ストリップ追従 & 今日へFAB
+  // カレンダー
   // =============================================
-  let activePill = null, io = null;
-  function setActive(k) {
-    if (activePill) activePill.classList.remove('is-active');
-    activePill = document.getElementById('pill-' + k);
-    if (activePill) {
-      activePill.classList.add('is-active');
-      activePill.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  const _today = new Date();
+  let calYear = _today.getFullYear();
+  let calMonth = _today.getMonth();      // 0-indexed
+  let selectedKey = dateKey(_today);     // 選択中の日付
+
+  function renderList() {
+    renderCalendar();
+    renderPanel();
+  }
+
+  function renderCalendar() {
+    document.getElementById('calYear').textContent = calYear;
+    document.getElementById('calMonth').textContent = `${calMonth + 1}月`;
+
+    const byDate = buildEventsByDate();
+    const grid = document.getElementById('grid');
+    const firstDow = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const prevMonthLastDay = new Date(calYear, calMonth, 0).getDate();
+    const isThisMonth = _today.getFullYear() === calYear && _today.getMonth() === calMonth;
+    const todayDate = _today.getDate();
+
+    let html = '';
+    ['日','月','火','水','木','金','土'].forEach((d,i) => {
+      html += `<div class="dow ${i===0?'sun':i===6?'sat':''}">${d}</div>`;
+    });
+
+    // 前月末（グレー）
+    for (let i = 0; i < firstDow; i++) {
+      const prevDay = prevMonthLastDay - firstDow + 1 + i;
+      const col = i % 7;
+      html += `<div class="cell is-other ${col===0?'sun':col===6?'sat':''}"><span class="d num">${prevDay}</span></div>`;
     }
+
+    // 当月
+    let cellCount = firstDow;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dow = new Date(calYear, calMonth, d).getDay();
+      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const evs = byDate[key] || [];
+      const isToday = isThisMonth && d === todayDate;
+      const isSel = key === selectedKey;
+
+      // チップ（企業名の重複を除いて最大2件＋残数）
+      const uniq = [];
+      evs.forEach(e => {
+        const nm = shortCompany(e.company);
+        if (!uniq.find(u => u.name === nm)) uniq.push({ name: nm, cat: e.category || 'pharmacy' });
+      });
+      let chips = uniq.slice(0, 2).map(u =>
+        `<span class="evchip cat-${u.cat}">${u.name}</span>`
+      ).join('');
+      if (uniq.length > 2) chips += `<span class="evchip more">+${uniq.length - 2}</span>`;
+
+      const tag = evs.length ? 'button' : 'div';
+      const cls = 'cell'
+        + (dow===0?' sun':dow===6?' sat':'')
+        + (isToday?' is-today':'')
+        + (evs.length?' has-ev':'')
+        + (isSel?' is-selected':'');
+      const handler = evs.length ? ` onclick="selectDay('${key}')" aria-label="${calMonth+1}月${d}日 説明会${evs.length}件"` : '';
+      html += `<${tag} class="${cls}"${handler}><span class="d num">${d}</span>`
+        + (evs.length ? `<span class="evchips">${chips}</span>` : '')
+        + `</${tag}>`;
+      cellCount++;
+    }
+
+    // 翌月頭（グレー・週の余りを埋める）
+    let trail = (7 - (cellCount % 7)) % 7;
+    for (let i = 0; i < trail; i++) {
+      const col = (cellCount + i) % 7;
+      html += `<div class="cell is-other ${col===0?'sun':col===6?'sat':''}"><span class="d num">${i+1}</span></div>`;
+    }
+
+    grid.innerHTML = html;
   }
-  function observeSections() {
-    if (io) io.disconnect();
-    io = new IntersectionObserver((entries) => {
-      const vis = entries.filter(e => e.isIntersecting)
-        .sort((a,b) => a.boundingClientRect.top - b.boundingClientRect.top);
-      if (vis.length) setActive(vis[0].target.dataset.day);
-    }, { rootMargin: '-145px 0px -55% 0px', threshold: 0 });
-    document.querySelectorAll('.day-sec').forEach(s => io.observe(s));
+
+  function selectDay(key) {
+    selectedKey = key;
+    renderCalendar();
+    renderPanel();
+    document.getElementById('panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
-  const fab = document.getElementById('fab');
-  window.addEventListener('scroll', () => {
-    fab.classList.toggle('show', window.scrollY > 500);
-  }, { passive: true });
+
+  function renderPanel() {
+    const byDate = buildEventsByDate();
+    const parts = selectedKey.split('-').map(Number);
+    const dObj = new Date(parts[0], parts[1]-1, parts[2]);
+    const dow = WEEKDAYS[dObj.getDay()];
+    document.getElementById('panel-date').textContent =
+      `${parts[1]}月${parts[2]}日(${dow}) の説明会`;
+
+    const evs = byDate[selectedKey] || [];
+    const list = document.getElementById('panel-list');
+    if (!evs.length) {
+      list.innerHTML = `<div class="panel-empty">この日の説明会はありません。</div>`;
+      return;
+    }
+    list.innerHTML = evs.map(e => renderPanelCard(e)).join('');
+  }
+
+  function renderPanelCard(e) {
+    const d = new Date(e.date);
+    const cat = e.category || 'pharmacy';
+    const isApplied = appliedEventIds.has(e.id);
+    const isTimeUnknown = d.getHours() === 0 && d.getMinutes() === 0;
+    const timeStr = isTimeUnknown ? '時間未定'
+      : `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}${e.end_time ? '〜' + e.end_time : '〜'}`;
+    const location = e.format === 'online' ? 'オンライン' : (e.prefecture || 'オフライン');
+    const isPastDeadline = e.deadline && new Date(e.deadline) < new Date();
+
+    let action;
+    if (isApplied) {
+      action = `<span class="ev-state applied">✓ 申込済み</span>`;
+    } else if (e.is_full) {
+      action = `<span class="ev-state full">満員</span>`;
+    } else if (isPastDeadline) {
+      action = `<span class="ev-state full">締切</span>`;
+    } else if (currentUser) {
+      action = `<button class="ev-cta cat-${cat}" onclick="event.stopPropagation();openApplyModal('${e.id}')">予約する</button>`;
+    } else {
+      action = `<button class="ev-cta cat-${cat}" onclick="event.stopPropagation();openModal('login')">予約する</button>`;
+    }
+
+    return `
+      <div class="ev" onclick="openDetailModal('${e.id}')">
+        <span class="ev-bar cat-${cat}"></span>
+        <span class="ev-body">
+          <b>${e.company}</b>
+          <span class="et">${e.title}</span>
+          <span class="meta">${timeStr} ・ ${location}</span>
+        </span>
+        ${action}
+      </div>`;
+  }
+
+  function changeCalMonth(delta) {
+    calMonth += delta;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    if (calMonth < 0)  { calMonth = 11; calYear--; }
+    // 月を変えたら、その月に選択日がなければ最初のイベント日（なければ空）に合わせる
+    const byDate = buildEventsByDate();
+    const prefix = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+    if (!selectedKey.startsWith(prefix)) {
+      const daysWithEv = Object.keys(byDate).filter(k => k.startsWith(prefix)).sort();
+      selectedKey = daysWithEv.length ? daysWithEv[0] : `${prefix}-01`;
+    }
+    renderCalendar();
+    renderPanel();
+  }
 
   // =============================================
   // 申し込み済みイベント読み込み
@@ -992,18 +1034,16 @@
     }
 
     const applyEl = document.getElementById('detailApplyBtn');
-    if (isApplied && currentFilter === 'applied') {
-      applyEl.innerHTML = `<button class="btn-cancel" onclick="cancelApplication('${e.id}')">キャンセル</button>`;
-    } else if (isApplied) {
-      applyEl.innerHTML = `<button class="btn-applied">✓ 申込済み</button>`;
+    if (isApplied) {
+      applyEl.innerHTML = `<button class="detail-btn cancel" onclick="cancelApplication('${e.id}')">申し込みをキャンセル</button>`;
     } else if (e.is_full) {
-      applyEl.innerHTML = `<button class="btn-full">満員</button>`;
+      applyEl.innerHTML = `<button class="detail-btn full">満員</button>`;
     } else if (e.deadline && new Date(e.deadline) < new Date()) {
-      applyEl.innerHTML = `<button class="btn-full" style="cursor:not-allowed">締め切り済み</button>`;
+      applyEl.innerHTML = `<button class="detail-btn full" style="cursor:not-allowed">締め切り済み</button>`;
     } else if (currentUser) {
-      applyEl.innerHTML = `<button class="ev-cta cat-${cat}" onclick="closeModal('detail');openApplyModal('${e.id}')">予約する →</button>`;
+      applyEl.innerHTML = `<button class="detail-btn apply cat-${cat}" onclick="closeModal('detail');openApplyModal('${e.id}')">予約する →</button>`;
     } else {
-      applyEl.innerHTML = `<button class="ev-cta cat-${cat}" onclick="closeModal('detail');openModal('login')">ログインして予約する →</button>`;
+      applyEl.innerHTML = `<button class="detail-btn apply cat-${cat}" onclick="closeModal('detail');openModal('login')">ログインして予約する →</button>`;
     }
 
     openModal('detail');
@@ -1093,7 +1133,6 @@
     }
 
     // メール送信はSupabase DBトリガー（send_application_email）が自動で行う
-
     appliedEventIds.add(pendingApplyEvent.id);
 
     // 定員チェック：申し込み後にeventsテーブルを再取得してis_fullを反映
@@ -1147,23 +1186,19 @@
     const list = q ? UNIVERSITIES.filter(u => u.includes(q)) : UNIVERSITIES;
     renderUnivDropdown(list);
   }
-
   function renderUnivDropdown(list) {
     const dd = document.getElementById('univDropdown');
     dd.innerHTML = list.map(u => `<div class="univ-option" onmousedown="selectUniv('${u}')">${u}</div>`).join('');
     dd.style.display = list.length ? 'block' : 'none';
   }
-
   function showUnivDropdown() {
     const q = document.getElementById('univSearchInput').value;
     const list = q ? UNIVERSITIES.filter(u => u.includes(q)) : UNIVERSITIES;
     renderUnivDropdown(list);
   }
-
   function hideUnivDropdown() {
     setTimeout(() => { document.getElementById('univDropdown').style.display = 'none'; }, 150);
   }
-
   function selectUniv(name) {
     document.getElementById('univSearchInput').value = name;
     document.getElementById('signupUniv').value = name;
@@ -1201,8 +1236,7 @@
     }
 
     const { error } = await db.auth.signUp({
-      email,
-      password,
+      email, password,
       options: { data: { name, university: univ, year, phone } }
     });
 
@@ -1219,17 +1253,14 @@
     const email = document.getElementById('resetEmail').value;
     const errEl = document.getElementById('resetError');
     errEl.style.display = 'none';
-
     if (!email) {
       errEl.textContent = 'メールアドレスを入力してください';
       errEl.style.display = 'block';
       return;
     }
-
     const { error } = await db.auth.resetPasswordForEmail(email, {
       redirectTo: 'https://pharmacalendar.vercel.app'
     });
-
     if (error) {
       errEl.textContent = '送信に失敗しました: ' + error.message;
       errEl.style.display = 'block';
@@ -1250,7 +1281,6 @@
       errEl.style.display = 'block';
       return;
     }
-
     if (btn) { btn.disabled = true; btn.textContent = '設定中…'; }
 
     try {
@@ -1260,10 +1290,8 @@
         errEl.style.display = 'block';
         return;
       }
-
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
-
       let res;
       try {
         res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
@@ -1351,11 +1379,9 @@
         return;
       }
 
-      // ログイン成功: Supabaseクライアントを使わず直接状態を設定
       sessionToken = authData.access_token;
       currentUser = authData.user;
       saveUserSession(authData);
-      // ログインイベント記録（月間MAU集計用）
       fetch(`${SUPABASE_URL}/rest/v1/login_events`, {
         method: 'POST',
         headers: {
@@ -1378,7 +1404,6 @@
   }
 
   async function handleLogout() {
-    // サーバー側ログアウト（ベストエフォート）
     if (sessionToken) {
       fetch(`${SUPABASE_URL}/auth/v1/logout`, {
         method: 'POST',
@@ -1396,19 +1421,13 @@
   // =============================================
   // モーダル管理
   // =============================================
-  function openModal(name) {
-    document.getElementById(name + 'Modal').classList.add('active');
-  }
-
-  function closeModal(name) {
-    document.getElementById(name + 'Modal').classList.remove('active');
-  }
+  function openModal(name) { document.getElementById(name + 'Modal').classList.add('active'); }
+  function closeModal(name) { document.getElementById(name + 'Modal').classList.remove('active'); }
 
   // =============================================
   // 起動
   // =============================================
   (async () => {
-    // サイト訪問記録（PV）
     fetch(`${SUPABASE_URL}/rest/v1/site_visits`, {
       method: 'POST',
       headers: {
@@ -1420,9 +1439,8 @@
       body: '{}'
     }).catch(() => {});
 
-    loadEvents(); // セッション状態に関係なく即座にイベントを取得・表示
+    loadEvents();
 
-    // Supabaseクライアントを使わず自前のセッションキーから復元
     const stored = getUserSession();
     if (stored?.user) {
       sessionToken = stored.access_token;
