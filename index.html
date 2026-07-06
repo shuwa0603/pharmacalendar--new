@@ -162,6 +162,18 @@
     }
     .cal-nav button:hover{border-color:var(--pine);color:var(--pine)}
 
+    /* 予約のみ表示切り替え（ログイン後のみ表示） */
+    .my-filter{display:none;padding:0 16px 10px}
+    .my-filter.visible{display:flex;gap:8px}
+    .filter-btn{
+      font-family:inherit;font-size:12px;font-weight:700;
+      border-radius:999px;padding:7px 14px;cursor:pointer;
+      border:1.5px solid var(--line);background:#fff;color:var(--ink-soft);
+      transition:.15s;
+    }
+    .filter-btn:hover{border-color:var(--pine);color:var(--pine)}
+    .filter-btn.active{background:var(--pine);border-color:var(--pine);color:#fff}
+
     /* grid */
     .grid{
       display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
@@ -230,6 +242,8 @@
     }
     .panel-date{font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:8px}
     .panel-empty{font-size:13px;color:var(--ink-soft)}
+    .panel-group-date{font-size:12px;font-weight:800;color:var(--pine);margin:14px 0 6px}
+    .panel-group-date:first-child{margin-top:0}
     .ev{
       display:flex;align-items:center;gap:11px;
       background:#fff;border:1px solid var(--line);
@@ -416,6 +430,11 @@
         <button aria-label="前の月" onclick="changeCalMonth(-1)">‹</button>
         <button aria-label="次の月" onclick="changeCalMonth(1)">›</button>
       </div>
+    </div>
+
+    <div class="my-filter" id="myFilter">
+      <button class="filter-btn active" id="filterAll" onclick="setMyFilter(false)">すべての説明会</button>
+      <button class="filter-btn" id="filterMine" onclick="setMyFilter(true)">予約した説明会のみ</button>
     </div>
 
     <div class="grid" id="grid" role="grid" aria-label="説明会カレンダー"></div>
@@ -740,6 +759,7 @@
       </div>
       <button class="btn btn-outline" onclick="handleLogout()">ログアウト</button>
     `;
+    document.getElementById('myFilter').classList.add('visible');
   }
 
   function updateNavForLoggedOut() {
@@ -747,6 +767,8 @@
       <button class="btn btn-ghost" onclick="openModal('login')">ログイン</button>
       <button class="btn btn-solid" onclick="openModal('signup')">新規登録</button>
     `;
+    document.getElementById('myFilter').classList.remove('visible');
+    if (showOnlyApplied) setMyFilter(false);
   }
 
   // =============================================
@@ -760,10 +782,22 @@
                .replace(/\s*(\(株\)|\(有\)|\(合\)|株式会社|有限会社|合同会社)$/,'');
   }
 
+  // 予約のみ表示の切り替え
+  let showOnlyApplied = false;
+  function setMyFilter(mineOnly) {
+    showOnlyApplied = mineOnly;
+    document.getElementById('filterAll').classList.toggle('active', !mineOnly);
+    document.getElementById('filterMine').classList.toggle('active', mineOnly);
+    renderList();
+  }
+  function getVisibleEvents() {
+    return showOnlyApplied ? allEvents.filter(e => appliedEventIds.has(e.id)) : allEvents;
+  }
+
   // 日付文字列 → イベント配列
   function buildEventsByDate() {
     const map = {};
-    allEvents.forEach(e => {
+    getVisibleEvents().forEach(e => {
       const k = dateKey(new Date(e.date));
       if (!map[k]) map[k] = [];
       map[k].push(e);
@@ -918,6 +952,30 @@
   }
 
   function renderPanel() {
+    const list = document.getElementById('panel-list');
+
+    if (showOnlyApplied) {
+      document.getElementById('panel-date').textContent = '予約した説明会（すべて）';
+      const evs = getVisibleEvents().slice().sort((a, b) => new Date(a.date) - new Date(b.date));
+      if (!evs.length) {
+        list.innerHTML = `<div class="panel-empty">予約した説明会はありません。</div>`;
+        return;
+      }
+      const groups = [];
+      evs.forEach(e => {
+        const k = dateKey(new Date(e.date));
+        let g = groups.find(g => g.key === k);
+        if (!g) { g = { key: k, evs: [] }; groups.push(g); }
+        g.evs.push(e);
+      });
+      list.innerHTML = groups.map(g => {
+        const dObj = new Date(g.key + 'T00:00:00');
+        const label = `${dObj.getMonth()+1}月${dObj.getDate()}日(${WEEKDAYS[dObj.getDay()]})`;
+        return `<div class="panel-group-date">${label}</div>` + g.evs.map(e => renderPanelCard(e)).join('');
+      }).join('');
+      return;
+    }
+
     const byDate = buildEventsByDate();
     const parts = selectedKey.split('-').map(Number);
     const dObj = new Date(parts[0], parts[1]-1, parts[2]);
@@ -926,7 +984,6 @@
       `${parts[1]}月${parts[2]}日(${dow}) の説明会`;
 
     const evs = byDate[selectedKey] || [];
-    const list = document.getElementById('panel-list');
     if (!evs.length) {
       list.innerHTML = `<div class="panel-empty">この日の説明会はありません。</div>`;
       return;
