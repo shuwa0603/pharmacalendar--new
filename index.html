@@ -810,8 +810,10 @@
   // =============================================
   async function loadEvents() {
     try {
+      // 時差による取りこぼし防止のため「昨日以降」で取得し、正確な絞り込みは下のfilterで行う
+      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/events?select=*&order=date.asc`,
+        `${SUPABASE_URL}/rest/v1/events?select=*&date=gte.${dateKey(yesterday)}&order=date.asc`,
         { headers: { 'apikey': EDGE_ANON_KEY, 'Authorization': `Bearer ${EDGE_ANON_KEY}` } }
       );
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -1487,14 +1489,16 @@
       body: '{}'
     }).catch(() => {});
 
+    // 先に空のカレンダーを描画し、データ到着後に埋める（体感速度向上）
+    renderList();
     loadEvents();
 
     const stored = getUserSession();
     if (stored?.user) {
       sessionToken = stored.access_token;
       currentUser = stored.user;
-      try { await ensureProfile(stored.user); } catch(e) {}
       updateNavForUser(stored.user);
+      ensureProfile(stored.user).catch(() => {});
       await loadMyApplications();
       renderList();
     }
