@@ -232,6 +232,7 @@
     .evchip.cat-drug{color:var(--drug);background:var(--drug-pale)}
     .evchip.cat-pharma{color:var(--pharma);background:var(--pharma-pale)}
     .evchip.more{color:var(--ink-soft);background:transparent;font-weight:800}
+    .evchip.is-past{color:#9CA8A0;background:#EEF1ED}
     .cell:focus-visible{outline:3px solid #2E8B62;outline-offset:-3px;z-index:1}
 
     /* day panel */
@@ -250,6 +251,8 @@
       border-radius:14px;padding:11px 12px;margin-bottom:8px;cursor:pointer;
     }
     .ev:last-child{margin-bottom:0}
+    .ev.is-past{opacity:.55}
+    .ev.is-past .ev-bar{background:#9CA8A0!important}
     .ev-bar{width:4px;align-self:stretch;border-radius:99px;flex-shrink:0;background:var(--pine)}
     .ev-bar.cat-drug{background:var(--drug)}
     .ev-bar.cat-pharma{background:var(--pharma)}
@@ -810,26 +813,29 @@
   // =============================================
   async function loadEvents() {
     try {
-      // 時差による取りこぼし防止のため「昨日以降」で取得し、正確な絞り込みは下のfilterで行う
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+      // 今月の頭からその月の説明会は過去分も含めて表示する（グレーアウトで区別）
+      const today = new Date(); today.setHours(0,0,0,0);
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
       const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/events?select=*&date=gte.${dateKey(yesterday)}&order=date.asc`,
+        `${SUPABASE_URL}/rest/v1/events?select=*&date=gte.${dateKey(monthStart)}&order=date.asc`,
         { headers: { 'apikey': EDGE_ANON_KEY, 'Authorization': `Bearer ${EDGE_ANON_KEY}` } }
       );
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
-      const today = new Date(); today.setHours(0,0,0,0);
       allEvents = (data || [])
-        .filter(e => { const d = new Date(e.date); d.setHours(0,0,0,0); return d >= today; })
-        .map(e => ({ ...e, formatKey: e.format || 'online' }));
+        .map(e => {
+          const d = new Date(e.date); d.setHours(0,0,0,0);
+          return { ...e, formatKey: e.format || 'online', isPast: d < today };
+        });
       eventsById = Object.fromEntries(allEvents.map(e => [e.id, e]));
     } catch (err) {
       console.error('イベント取得エラー:', err);
       allEvents = [];
     }
-    // 最初のイベントの月を初期表示にし、その日を選択
-    if (allEvents.length) {
-      const first = new Date(allEvents[0].date);
+    // 直近の開催予定（過去は除く）の月を初期表示にし、その日を選択
+    const upcoming = allEvents.find(e => !e.isPast) || allEvents[0];
+    if (upcoming) {
+      const first = new Date(upcoming.date);
       calYear = first.getFullYear();
       calMonth = first.getMonth();
       selectedKey = dateKey(first);
@@ -844,10 +850,11 @@
   function updateBanner() {
     const banner = document.getElementById('specialBanner');
     if (!banner) return;
-    if (allEvents.length === 0) { banner.innerHTML = ''; return; }
+    const upcomingEvents = allEvents.filter(e => !e.isPast);
+    if (upcomingEvents.length === 0) { banner.innerHTML = ''; return; }
 
     const oneWeekLater = new Date(); oneWeekLater.setDate(oneWeekLater.getDate() + 7);
-    const featured = allEvents.find(e => new Date(e.date) >= oneWeekLater) || allEvents[0];
+    const featured = upcomingEvents.find(e => new Date(e.date) >= oneWeekLater) || upcomingEvents[0];
     const d = new Date(featured.date);
     const month = d.getMonth() + 1;
     const day = d.getDate();
@@ -916,10 +923,10 @@
       const uniq = [];
       evs.forEach(e => {
         const nm = shortCompany(e.company);
-        if (!uniq.find(u => u.name === nm)) uniq.push({ name: nm, cat: e.category || 'pharmacy' });
+        if (!uniq.find(u => u.name === nm)) uniq.push({ name: nm, cat: e.category || 'pharmacy', isPast: e.isPast });
       });
       let chips = uniq.slice(0, 2).map(u =>
-        `<span class="evchip cat-${u.cat}">${u.name}</span>`
+        `<span class="evchip ${u.isPast ? 'is-past' : 'cat-'+u.cat}">${u.name}</span>`
       ).join('');
       if (uniq.length > 2) chips += `<span class="evchip more">+${uniq.length - 2}</span>`;
 
@@ -1006,6 +1013,8 @@
     let action;
     if (isApplied) {
       action = `<span class="ev-state applied">✓ 申込済み</span>`;
+    } else if (e.isPast) {
+      action = `<span class="ev-state full">終了</span>`;
     } else if (e.is_full) {
       action = `<span class="ev-state full">満員</span>`;
     } else if (isPastDeadline) {
@@ -1017,7 +1026,7 @@
     }
 
     return `
-      <div class="ev" onclick="openDetailModal('${e.id}')">
+      <div class="ev ${e.isPast ? 'is-past' : ''}" onclick="openDetailModal('${e.id}')">
         <span class="ev-bar cat-${cat}"></span>
         <span class="ev-body">
           <b>${e.company}</b>
@@ -1086,6 +1095,8 @@
     const applyEl = document.getElementById('detailApplyBtn');
     if (isApplied) {
       applyEl.innerHTML = `<button class="detail-btn cancel" onclick="cancelApplication('${e.id}')">申し込みをキャンセル</button>`;
+    } else if (e.isPast) {
+      applyEl.innerHTML = `<button class="detail-btn full" style="cursor:not-allowed">この説明会は終了しました</button>`;
     } else if (e.is_full) {
       applyEl.innerHTML = `<button class="detail-btn full">満員</button>`;
     } else if (e.deadline && new Date(e.deadline) < new Date()) {
@@ -1116,7 +1127,7 @@
   // =============================================
   function openApplyModal(eventId) {
     const e = eventsById[eventId];
-    if (e.is_full) return;
+    if (e.is_full || e.isPast) return;
     pendingApplyEvent = e;
     const d = new Date(e.date);
     const cat = e.category || 'pharmacy';
