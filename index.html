@@ -316,7 +316,8 @@
       align-items:flex-start;justify-content:center;padding:12px 16px 8px;overflow-y:auto;
     }
     .modal-overlay.active{display:flex}
-    .modal-overlay.active.modal-center{align-items:center;padding:16px}
+    .modal-overlay.active.modal-center{padding:16px}
+    .modal-overlay.modal-center .modal{margin:auto}
     .modal{
       background:#fff;border-radius:16px;padding:28px;width:100%;max-width:400px;
       position:relative;animation:modalIn .2s ease;
@@ -1417,15 +1418,17 @@
       );
       const data = await res.json();
       const p = (Array.isArray(data) && data[0]) || {};
-      document.getElementById('editProfileName').value = p.name || '';
-      const univ = p.university || '';
+      // profiles に値が無い項目は、登録時の情報（user_metadata）で補う
+      const meta = currentUser.user_metadata || {};
+      document.getElementById('editProfileName').value = p.name || meta.name || '';
+      const univ = p.university || meta.university || '';
       const isKnown = UNIVERSITIES.includes(univ);
       document.getElementById('editProfileUnivInput').value = univ;
       document.getElementById('editProfileUniv').value = isKnown ? univ : (univ ? 'その他' : '');
       document.getElementById('editProfileUnivOther').style.display = (!isKnown && univ) ? 'block' : 'none';
       document.getElementById('editProfileUnivOther').value = (!isKnown && univ) ? univ : '';
-      document.getElementById('editProfileYear').value = p.year || '';
-      document.getElementById('editProfilePhone').value = p.phone || '';
+      document.getElementById('editProfileYear').value = p.year || meta.year || '';
+      document.getElementById('editProfilePhone').value = p.phone || meta.phone || '';
       document.getElementById('editProfileEmail').value = currentUser.email || '';
       document.getElementById('editProfilePassword').value = '';
       openModal('editProfile');
