@@ -83,9 +83,22 @@
     .btn-outline{background:transparent;border-color:var(--line);color:var(--ink)}
     .btn-outline:hover{border-color:var(--pine);color:var(--pine)}
     .btn:focus-visible{outline:3px solid #2E8B62;outline-offset:2px}
-    .user-info{display:flex;align-items:center;gap:8px;min-width:0}
-    .user-info span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:96px;font-size:12px;font-weight:700}
+    .user-menu{position:relative;min-width:0}
+    .user-info{display:flex;align-items:center;gap:8px;min-width:0;background:none;border:none;cursor:pointer;padding:4px;border-radius:999px;font-family:inherit}
+    .user-info:hover{background:var(--mint)}
+    .user-info span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:96px;font-size:12px;font-weight:700;color:var(--ink)}
     .user-avatar{width:30px;height:30px;border-radius:50%;background:var(--pine);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0}
+    .user-dropdown{
+      display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:140px;
+      background:#fff;border:1px solid var(--line);border-radius:12px;
+      box-shadow:0 8px 24px -8px rgba(16,56,44,.25);overflow:hidden;z-index:60;
+    }
+    .user-dropdown.open{display:block}
+    .user-dropdown button{
+      width:100%;text-align:left;padding:11px 14px;font-family:inherit;font-size:13px;font-weight:600;
+      background:none;border:none;cursor:pointer;color:var(--ink);
+    }
+    .user-dropdown button:hover{background:var(--mint);color:var(--pine)}
 
     /* ---------- hero ---------- */
     .hero{
@@ -389,6 +402,17 @@
     .apply-btn-row{display:flex;gap:10px}
     .apply-btn-row .btn{flex:1;padding:12px;font-size:14px;text-align:center}
 
+    /* 退会モーダル */
+    .withdraw-warning{
+      font-size:12.5px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;
+      border-radius:10px;padding:12px 14px;margin-bottom:16px;line-height:1.7;
+    }
+    .withdraw-warning ul{margin:6px 0 0 18px}
+    .withdraw-confirm{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--ink);margin-bottom:16px;cursor:pointer}
+    .withdraw-confirm input{margin-top:2px;flex-shrink:0}
+    .detail-btn.danger{background:#dc2626;color:#fff}
+    .detail-btn.danger:disabled{background:#f3d4d4;color:#fff;cursor:not-allowed}
+
     .apply-success-icon{
       width:56px;height:56px;border-radius:50%;background:var(--mint);color:var(--pine);
       display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px;
@@ -551,6 +575,79 @@
     <div class="form-error" id="signupError"></div>
     <button class="btn btn-primary" style="width:100%;padding:10px;font-size:14px;margin-top:6px" onclick="handleSignup()">登録する</button>
     <p style="text-align:center;margin-top:6px;margin-bottom:0;font-size:12px">すでにアカウントをお持ちの方は <a href="#" onclick="closeModal('signup');openModal('login')" style="color:var(--pine)">ログイン</a></p>
+  </div>
+</div>
+
+<!-- アカウント情報変更モーダル -->
+<div class="modal-overlay modal-center" id="editProfileModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('editProfile')">×</button>
+    <h2>アカウント情報を変更</h2>
+    <p>登録内容を編集できます</p>
+    <div class="form-group">
+      <label>お名前</label>
+      <input type="text" id="editProfileName" placeholder="薬学 太郎">
+    </div>
+    <div class="form-group">
+      <label>大学名</label>
+      <div class="univ-search-wrap">
+        <input type="text" id="editProfileUnivInput" placeholder="大学名を検索する" autocomplete="off"
+               oninput="filterEditUnivList()" onfocus="showEditUnivDropdown()" onblur="hideEditUnivDropdown()">
+        <div class="univ-dropdown" id="editUnivDropdown"></div>
+      </div>
+      <input type="hidden" id="editProfileUniv">
+      <input type="text" id="editProfileUnivOther" placeholder="大学名を入力してください" style="display:none;margin-top:8px;width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:16px;font-family:inherit">
+    </div>
+    <div class="form-group">
+      <label>卒業予定年度</label>
+      <select id="editProfileYear">
+        <option value="">選択してください</option>
+        <option value="2026">2026年3月卒業予定</option>
+        <option value="2027">2027年3月卒業予定</option>
+        <option value="2028">2028年3月卒業予定</option>
+        <option value="2029">2029年3月卒業予定</option>
+        <option value="2030">2030年3月卒業予定</option>
+        <option value="2031">2031年3月卒業予定</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>電話番号</label>
+      <input type="tel" id="editProfilePhone" placeholder="09012345678（ハイフンなし）">
+    </div>
+    <div class="form-group">
+      <label>メールアドレス</label>
+      <input type="email" id="editProfileEmail" placeholder="example@pharm.ac.jp">
+      <p style="font-size:11px;color:var(--ink-soft);margin-top:6px">メールアドレスを変更する場合、新しいアドレス宛に確認メールが届きます。確認が完了するまで元のメールアドレスでログインできます。</p>
+    </div>
+    <div class="form-group">
+      <label>新しいパスワード</label>
+      <input type="password" id="editProfilePassword" placeholder="変更する場合のみ入力（8文字以上）">
+    </div>
+    <div class="form-error" id="editProfileError"></div>
+    <button class="btn btn-primary" style="width:100%;padding:12px;font-size:14px;margin-top:8px" id="editProfileSaveBtn" onclick="saveEditProfile()">この内容に変更する</button>
+  </div>
+</div>
+
+<!-- 退会モーダル -->
+<div class="modal-overlay modal-center" id="withdrawModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('withdraw')">×</button>
+    <h2>退会の確認</h2>
+    <p>退会すると、これまでの情報は元に戻せません</p>
+    <div class="withdraw-warning">
+      退会すると、このアカウントに登録されている以下の個人情報がすべて削除されます。
+      <ul>
+        <li>お名前・大学名・卒業予定年度・電話番号などの登録情報</li>
+        <li>これまでの説明会への申し込み履歴</li>
+        <li>ログインアカウント自体（同じメールアドレスでのログインができなくなります）</li>
+      </ul>
+    </div>
+    <label class="withdraw-confirm">
+      <input type="checkbox" id="withdrawConfirmCheck" onchange="document.getElementById('withdrawConfirmBtn').disabled = !this.checked">
+      <span>上記の内容をすべて読み、理解したうえで退会します。</span>
+    </label>
+    <button class="detail-btn danger" id="withdrawConfirmBtn" disabled onclick="handleWithdraw()">退会する</button>
+    <div class="form-error" id="withdrawError"></div>
   </div>
 </div>
 
@@ -756,14 +853,28 @@
   function updateNavForUser(user) {
     const initial = (user.user_metadata?.name || user.email || '?')[0].toUpperCase();
     document.getElementById('navRight').innerHTML = `
-      <div class="user-info">
-        <div class="user-avatar">${initial}</div>
-        <span>${user.user_metadata?.name || user.email}</span>
+      <div class="user-menu">
+        <button class="user-info" onclick="toggleUserMenu(event)">
+          <div class="user-avatar">${initial}</div>
+          <span>${user.user_metadata?.name || user.email}</span>
+        </button>
+        <div class="user-dropdown" id="userDropdown">
+          <button onclick="openEditProfileModal()">アカウント情報を変更</button>
+          <button onclick="openWithdrawModal()" style="color:#dc2626">退会</button>
+          <button onclick="handleLogout()">ログアウト</button>
+        </div>
       </div>
-      <button class="btn btn-outline" onclick="handleLogout()">ログアウト</button>
     `;
     document.getElementById('myFilter').classList.add('visible');
   }
+
+  function toggleUserMenu(ev) {
+    ev.stopPropagation();
+    document.getElementById('userDropdown')?.classList.toggle('open');
+  }
+  document.addEventListener('click', () => {
+    document.getElementById('userDropdown')?.classList.remove('open');
+  });
 
   function updateNavForLoggedOut() {
     document.getElementById('navRight').innerHTML = `
@@ -1265,6 +1376,217 @@
     document.getElementById('signupUniv').value = name;
     document.getElementById('univDropdown').style.display = 'none';
     document.getElementById('signupUnivOther').style.display = name === 'その他' ? 'block' : 'none';
+  }
+
+  // =============================================
+  // アカウント情報変更
+  // =============================================
+  function filterEditUnivList() {
+    const q = document.getElementById('editProfileUnivInput').value;
+    const list = q ? UNIVERSITIES.filter(u => u.includes(q)) : UNIVERSITIES;
+    renderEditUnivDropdown(list);
+  }
+  function renderEditUnivDropdown(list) {
+    const dd = document.getElementById('editUnivDropdown');
+    dd.innerHTML = list.map(u => `<div class="univ-option" onmousedown="selectEditUniv('${u}')">${u}</div>`).join('');
+    dd.style.display = list.length ? 'block' : 'none';
+  }
+  function showEditUnivDropdown() {
+    const q = document.getElementById('editProfileUnivInput').value;
+    const list = q ? UNIVERSITIES.filter(u => u.includes(q)) : UNIVERSITIES;
+    renderEditUnivDropdown(list);
+  }
+  function hideEditUnivDropdown() {
+    setTimeout(() => { document.getElementById('editUnivDropdown').style.display = 'none'; }, 150);
+  }
+  function selectEditUniv(name) {
+    document.getElementById('editProfileUnivInput').value = name;
+    document.getElementById('editProfileUniv').value = name;
+    document.getElementById('editUnivDropdown').style.display = 'none';
+    document.getElementById('editProfileUnivOther').style.display = name === 'その他' ? 'block' : 'none';
+  }
+
+  async function openEditProfileModal() {
+    if (!currentUser || !sessionToken) return;
+    const errEl = document.getElementById('editProfileError');
+    errEl.style.display = 'none';
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/profiles?select=name,university,year,phone&id=eq.${currentUser.id}`,
+        { headers: { 'apikey': EDGE_ANON_KEY, 'Authorization': `Bearer ${sessionToken}` } }
+      );
+      const data = await res.json();
+      const p = (Array.isArray(data) && data[0]) || {};
+      document.getElementById('editProfileName').value = p.name || '';
+      const univ = p.university || '';
+      const isKnown = UNIVERSITIES.includes(univ);
+      document.getElementById('editProfileUnivInput').value = univ;
+      document.getElementById('editProfileUniv').value = isKnown ? univ : (univ ? 'その他' : '');
+      document.getElementById('editProfileUnivOther').style.display = (!isKnown && univ) ? 'block' : 'none';
+      document.getElementById('editProfileUnivOther').value = (!isKnown && univ) ? univ : '';
+      document.getElementById('editProfileYear').value = p.year || '';
+      document.getElementById('editProfilePhone').value = p.phone || '';
+      document.getElementById('editProfileEmail').value = currentUser.email || '';
+      document.getElementById('editProfilePassword').value = '';
+      openModal('editProfile');
+    } catch (e) {
+      alert('情報の取得に失敗しました。もう一度お試しください。');
+    }
+  }
+
+  async function saveEditProfile() {
+    const name = document.getElementById('editProfileName').value.trim();
+    const univSelect = document.getElementById('editProfileUniv').value;
+    const univ = univSelect === 'その他'
+      ? document.getElementById('editProfileUnivOther').value.trim()
+      : (univSelect || document.getElementById('editProfileUnivInput').value.trim());
+    const year = document.getElementById('editProfileYear').value;
+    const phone = document.getElementById('editProfilePhone').value.trim();
+    const email = document.getElementById('editProfileEmail').value.trim();
+    const password = document.getElementById('editProfilePassword').value;
+    const errEl = document.getElementById('editProfileError');
+    errEl.style.display = 'none';
+
+    if (!name || !univ || !year || !phone || !email) {
+      errEl.textContent = 'すべての項目を入力してください';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (!/^0\d{9,10}$/.test(phone)) {
+      errEl.textContent = '電話番号はハイフンなしの数字で入力してください（例：09012345678）';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errEl.textContent = 'メールアドレスの形式が正しくありません';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (password && password.length < 8) {
+      errEl.textContent = 'パスワードは8文字以上にしてください';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const btn = document.getElementById('editProfileSaveBtn');
+    btn.disabled = true;
+    btn.textContent = '変更中…';
+
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=eq.${currentUser.id}`, {
+        method: 'PATCH',
+        headers: {
+          'apikey': EDGE_ANON_KEY,
+          'Authorization': `Bearer ${sessionToken}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ name, university: univ, year, phone })
+      });
+      if (!res.ok) throw new Error('プロフィールの更新に失敗しました');
+
+      // 認証アカウント側（メール・パスワード・表示用のuser_metadata）を更新
+      const authPayload = { data: { name, university: univ, year, phone } };
+      const emailChanged = email !== currentUser.email;
+      if (emailChanged) authPayload.email = email;
+      if (password) authPayload.password = password;
+
+      const authRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        method: 'PUT',
+        headers: {
+          'apikey': EDGE_ANON_KEY,
+          'Authorization': `Bearer ${sessionToken}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(authPayload)
+      });
+      if (!authRes.ok) {
+        const errData = await authRes.json().catch(() => ({}));
+        throw new Error(errData.msg || errData.message || 'アカウント情報の更新に失敗しました');
+      }
+
+      currentUser = { ...currentUser, user_metadata: { ...currentUser.user_metadata, name, university: univ, year, phone } };
+      const stored = getUserSession();
+      if (stored) { stored.user = currentUser; saveUserSession(stored); }
+      updateNavForUser(currentUser);
+      closeModal('editProfile');
+      if (emailChanged) {
+        alert('新しいメールアドレス宛に確認メールを送信しました。メール内のリンクから確認が完了すると、次回から新しいアドレスでログインできます。');
+      } else {
+        alert('アカウント情報を変更しました。');
+      }
+    } catch (e) {
+      errEl.textContent = e.message || '変更に失敗しました。もう一度お試しください。';
+      errEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'この内容に変更する';
+    }
+  }
+
+  // =============================================
+  // 退会
+  // =============================================
+  function openWithdrawModal() {
+    const checkEl = document.getElementById('withdrawConfirmCheck');
+    const btn = document.getElementById('withdrawConfirmBtn');
+    checkEl.checked = false;
+    btn.disabled = true;
+    btn.textContent = '退会する';
+    document.getElementById('withdrawError').style.display = 'none';
+    openModal('withdraw');
+  }
+
+  async function handleWithdraw() {
+    if (!currentUser || !sessionToken) return;
+    const checkEl = document.getElementById('withdrawConfirmCheck');
+    if (!checkEl.checked) return;
+
+    const btn = document.getElementById('withdrawConfirmBtn');
+    const errEl = document.getElementById('withdrawError');
+    errEl.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = '処理中…';
+
+    try {
+      let res, rawText;
+      try {
+        res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/delete_own_account`, {
+          method: 'POST',
+          headers: {
+            'apikey': EDGE_ANON_KEY,
+            'Authorization': `Bearer ${sessionToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (networkErr) {
+        throw new Error(`サーバーに接続できませんでした（${networkErr.message}）。`);
+      }
+
+      rawText = await res.text().catch(() => '');
+      let result = {};
+      try { result = JSON.parse(rawText); } catch (_) {}
+
+      if (!res.ok) {
+        const detail = result.message || result.error || rawText || '(応答本文なし)';
+        throw new Error(`ステータス ${res.status}：${detail}`);
+      }
+
+      clearUserSession();
+      sessionToken = null;
+      currentUser = null;
+      appliedEventIds = new Set();
+      updateNavForLoggedOut();
+      closeModal('withdraw');
+      renderList();
+      alert('退会手続きが完了しました。ご利用ありがとうございました。');
+    } catch (e) {
+      errEl.textContent = '退会処理に失敗しました：' + (e.message || String(e));
+      errEl.style.display = 'block';
+      checkEl.checked = false;
+      btn.disabled = true;
+      btn.textContent = '退会する';
+    }
   }
 
   async function handleSignup() {
