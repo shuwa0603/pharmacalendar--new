@@ -794,13 +794,40 @@
       if (!raw) return null;
       const s = JSON.parse(raw);
       if (!s?.access_token || !s?.user) return null;
-      const now = Math.floor(Date.now() / 1000);
-      if (s.expires_at && now > s.expires_at) { localStorage.removeItem(PHARMA_SESSION_KEY); return null; }
       return s;
     } catch(e) { return null; }
   }
   function clearUserSession() {
     try { localStorage.removeItem(PHARMA_SESSION_KEY); } catch(e) {}
+  }
+  // access_tokenの有効期限が近い（or 過ぎている）場合、refresh_tokenで自動更新する。
+  // refresh_tokenも無効ならnullを返し、呼び出し側でログアウト扱いにする。
+  async function refreshUserSession(refreshToken) {
+    if (!refreshToken) return null;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': EDGE_ANON_KEY },
+        body: JSON.stringify({ refresh_token: refreshToken })
+      });
+      if (!res.ok) return null;
+      const authData = await res.json();
+      if (!authData?.access_token || !authData?.user) return null;
+      saveUserSession(authData);
+      return authData;
+    } catch(e) { return null; }
+  }
+  // 保存済みセッションを検証し、必要なら更新した上でログイン状態を復元する。
+  async function restoreSession() {
+    const stored = getUserSession();
+    if (!stored?.user) return null;
+    const now = Math.floor(Date.now() / 1000);
+    if (stored.expires_at && now > stored.expires_at - 300) {
+      const refreshed = await refreshUserSession(stored.refresh_token);
+      if (!refreshed) { clearUserSession(); return null; }
+      return refreshed;
+    }
+    return stored;
   }
   let pendingApplyEvent = null;
 
@@ -2005,16 +2032,45 @@
     renderList();
     loadEvents();
 
-    const stored = getUserSession();
-    if (stored?.user) {
-      sessionToken = stored.access_token;
-      currentUser = stored.user;
-      updateNavForUser(stored.user);
-      ensureProfile(stored.user).catch(() => {});
+    const session = await restoreSession();
+    if (session?.user) {
+      sessionToken = session.access_token;
+      currentUser = session.user;
+      updateNavForUser(session.user);
+      ensureProfile(session.user).catch(() => {});
       await loadMyApplications();
       renderList();
     }
   })();
+
+  // =============================================
+  // セッションの自動延長
+  // アクセストークンは短時間（既定1時間）で失効するため、
+  // 定期的・かつアプリ復帰時にrefresh_tokenで裏側から更新し続ける。
+  // =============================================
+  setInterval(async () => {
+    if (!currentUser) return;
+    const refreshed = await restoreSession();
+    if (refreshed?.user) {
+      sessionToken = refreshed.access_token;
+      currentUser = refreshed.user;
+    } else {
+      sessionToken = null;
+      currentUser = null;
+      appliedEventIds = new Set();
+      updateNavForLoggedOut();
+      renderList();
+    }
+  }, 30 * 60 * 1000);
+
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible' || !currentUser) return;
+    const refreshed = await restoreSession();
+    if (refreshed?.user) {
+      sessionToken = refreshed.access_token;
+      currentUser = refreshed.user;
+    }
+  });
 </script>
 <script>
   if ('serviceWorker' in navigator) {
