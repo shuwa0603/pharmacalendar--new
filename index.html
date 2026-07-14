@@ -1848,7 +1848,7 @@
       return;
     }
     const { error } = await db.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://pharmacalendar.vercel.app'
+      redirectTo: 'https://pharmacalendar.jp'
     });
     if (error) {
       errEl.textContent = '送信に失敗しました: ' + error.message;
