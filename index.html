@@ -486,8 +486,8 @@
     <div class="cal-head">
       <div class="cal-title"><span class="yr num" id="calYear"></span><span class="mo" id="calMonth"></span></div>
       <div class="cal-nav">
-        <button aria-label="前の月" onclick="changeCalMonth(-1)">‹</button>
-        <button aria-label="次の月" onclick="changeCalMonth(1)">›</button>
+        <button aria-label="前の3週間" onclick="changeCalWeek(-1)">‹</button>
+        <button aria-label="次の3週間" onclick="changeCalWeek(1)">›</button>
       </div>
     </div>
 
@@ -1131,13 +1131,13 @@
       allEvents = [];
     }
     populateCompanyFilter();
-    // 直近の開催予定（過去は除く）の月を初期表示にし、その日を選択
-    const upcoming = allEvents.find(e => !e.isPast) || allEvents[0];
+    // 表示範囲（今日を含む週から5週間）内に直近の開催予定があればその日を選択、なければ今日のまま
+    const rangeStartKey = dateKey(viewStart);
+    const rangeEndKey = dateKey(addDays(viewStart, CAL_DAYS - 1));
+    const upcoming = allEvents.find(e => !e.isPast);
     if (upcoming) {
-      const first = new Date(upcoming.date);
-      calYear = first.getFullYear();
-      calMonth = first.getMonth();
-      selectedKey = dateKey(first);
+      const uKey = dateKey(new Date(upcoming.date));
+      if (uKey >= rangeStartKey && uKey <= rangeEndKey) selectedKey = uKey;
     }
     renderList();
     updateBanner();
@@ -1176,8 +1176,19 @@
   // カレンダー
   // =============================================
   const _today = new Date();
-  let calYear = _today.getFullYear();
-  let calMonth = _today.getMonth();      // 0-indexed
+  function addDays(d, n) {
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  }
+  function startOfWeek(d) {
+    const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    s.setDate(s.getDate() - s.getDay());
+    return s;
+  }
+  // カレンダーは常に5週間（35日）表示。今日を含む週から始まるので、
+  // 過去日でグレーアウトするのは1行目の数日だけで済む。
+  let viewStart = startOfWeek(_today);
   let selectedKey = dateKey(_today);     // 選択中の日付
 
   function renderList() {
@@ -1185,37 +1196,43 @@
     renderPanel();
   }
 
-  function renderCalendar() {
-    document.getElementById('calYear').textContent = calYear;
-    document.getElementById('calMonth').textContent = `${calMonth + 1}月`;
+  const CAL_ROWS = 5;
+  const CAL_DAYS = CAL_ROWS * 7;
 
+  // ヘッダーの年月表示（表示範囲が月をまたぐ場合は「7〜8月」のように表示）
+  function renderCalendarHeader(start, end) {
+    const y1 = start.getFullYear(), m1 = start.getMonth() + 1;
+    const y2 = end.getFullYear(), m2 = end.getMonth() + 1;
+    document.getElementById('calYear').textContent = y1;
+    if (y1 === y2 && m1 === m2) {
+      document.getElementById('calMonth').textContent = `${m1}月`;
+    } else if (y1 === y2) {
+      document.getElementById('calMonth').textContent = `${m1}〜${m2}月`;
+    } else {
+      document.getElementById('calMonth').textContent = `${m1}月〜${y2}年${m2}月`;
+    }
+  }
+
+  function renderCalendar() {
     const byDate = buildEventsByDate();
     const grid = document.getElementById('grid');
-    const firstDow = new Date(calYear, calMonth, 1).getDay();
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    const prevMonthLastDay = new Date(calYear, calMonth, 0).getDate();
-    const isThisMonth = _today.getFullYear() === calYear && _today.getMonth() === calMonth;
-    const todayDate = _today.getDate();
+    const endDate = addDays(viewStart, CAL_DAYS - 1);
+    renderCalendarHeader(viewStart, endDate);
+    const todayKey = dateKey(_today);
 
     let html = '';
     ['日','月','火','水','木','金','土'].forEach((d,i) => {
       html += `<div class="dow ${i===0?'sun':i===6?'sat':''}">${d}</div>`;
     });
 
-    // 前月末（グレー）
-    for (let i = 0; i < firstDow; i++) {
-      const prevDay = prevMonthLastDay - firstDow + 1 + i;
-      const col = i % 7;
-      html += `<div class="cell is-other ${col===0?'sun':col===6?'sat':''}"><span class="d num">${prevDay}</span></div>`;
-    }
-
-    // 当月
-    let cellCount = firstDow;
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dow = new Date(calYear, calMonth, d).getDay();
-      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    // 5週間（35日）、今日を含む週から順に表示。月をまたいでもすべて実在の日として扱う。
+    for (let i = 0; i < CAL_DAYS; i++) {
+      const d = addDays(viewStart, i);
+      const dow = d.getDay();
+      const dayNum = d.getDate();
+      const key = dateKey(d);
       const evs = byDate[key] || [];
-      const isToday = isThisMonth && d === todayDate;
+      const isToday = key === todayKey;
       const isSel = key === selectedKey;
 
       // チップ（企業名の重複を除いて最大2件＋残数）
@@ -1235,18 +1252,10 @@
         + (isToday?' is-today':'')
         + (evs.length?' has-ev':'')
         + (isSel?' is-selected':'');
-      const handler = evs.length ? ` onclick="selectDay('${key}')" aria-label="${calMonth+1}月${d}日 説明会${evs.length}件"` : '';
-      html += `<${tag} class="${cls}"${handler}><span class="d num">${d}</span>`
+      const handler = evs.length ? ` onclick="selectDay('${key}')" aria-label="${d.getMonth()+1}月${dayNum}日 説明会${evs.length}件"` : '';
+      html += `<${tag} class="${cls}"${handler}><span class="d num">${dayNum}</span>`
         + (evs.length ? `<span class="evchips">${chips}</span>` : '')
         + `</${tag}>`;
-      cellCount++;
-    }
-
-    // 翌月頭（グレー・週の余りを埋める）
-    let trail = (7 - (cellCount % 7)) % 7;
-    for (let i = 0; i < trail; i++) {
-      const col = (cellCount + i) % 7;
-      html += `<div class="cell is-other ${col===0?'sun':col===6?'sat':''}"><span class="d num">${i+1}</span></div>`;
     }
 
     grid.innerHTML = html;
@@ -1336,16 +1345,16 @@
       </div>`;
   }
 
-  function changeCalMonth(delta) {
-    calMonth += delta;
-    if (calMonth > 11) { calMonth = 0; calYear++; }
-    if (calMonth < 0)  { calMonth = 11; calYear--; }
-    // 月を変えたら、その月に選択日がなければ最初のイベント日（なければ空）に合わせる
+  // 3行（21日）分ずつ表示範囲をずらす
+  function changeCalWeek(delta) {
+    viewStart = addDays(viewStart, delta * 21);
+    // ずらした結果、選択中の日が表示範囲外になったら、範囲内の最初のイベント日（なければ表示開始日）に合わせる
     const byDate = buildEventsByDate();
-    const prefix = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
-    if (!selectedKey.startsWith(prefix)) {
-      const daysWithEv = Object.keys(byDate).filter(k => k.startsWith(prefix)).sort();
-      selectedKey = daysWithEv.length ? daysWithEv[0] : `${prefix}-01`;
+    const startKey = dateKey(viewStart);
+    const endKey = dateKey(addDays(viewStart, CAL_DAYS - 1));
+    if (selectedKey < startKey || selectedKey > endKey) {
+      const daysWithEv = Object.keys(byDate).filter(k => k >= startKey && k <= endKey).sort();
+      selectedKey = daysWithEv.length ? daysWithEv[0] : startKey;
     }
     renderCalendar();
     renderPanel();
