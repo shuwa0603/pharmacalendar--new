@@ -193,6 +193,20 @@
     .filter-btn:hover{border-color:var(--pine);color:var(--pine)}
     .filter-btn.active{background:var(--pine);border-color:var(--pine);color:#fff}
 
+    /* 企業名フィルター（常時表示） */
+    .company-filter{padding:0 16px 10px}
+    .company-filter select{
+      width:100%;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+      border:1.5px solid var(--line);border-radius:999px;
+      padding:9px 34px 9px 16px;background:#fff;cursor:pointer;
+      appearance:none;-webkit-appearance:none;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B7A70' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");
+      background-repeat:no-repeat;background-position:right 14px center;
+      transition:.15s;
+    }
+    .company-filter select:hover{border-color:var(--pine)}
+    .company-filter select.active{border-color:var(--pine);color:var(--pine)}
+
     /* grid */
     .grid{
       display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
@@ -475,6 +489,12 @@
         <button aria-label="前の月" onclick="changeCalMonth(-1)">‹</button>
         <button aria-label="次の月" onclick="changeCalMonth(1)">›</button>
       </div>
+    </div>
+
+    <div class="company-filter">
+      <select id="companyFilterSelect" onchange="setCompanyFilter(this.value)">
+        <option value="">すべての企業</option>
+      </select>
     </div>
 
     <div class="my-filter" id="myFilter">
@@ -794,40 +814,13 @@
       if (!raw) return null;
       const s = JSON.parse(raw);
       if (!s?.access_token || !s?.user) return null;
+      const now = Math.floor(Date.now() / 1000);
+      if (s.expires_at && now > s.expires_at) { localStorage.removeItem(PHARMA_SESSION_KEY); return null; }
       return s;
     } catch(e) { return null; }
   }
   function clearUserSession() {
     try { localStorage.removeItem(PHARMA_SESSION_KEY); } catch(e) {}
-  }
-  // access_tokenの有効期限が近い（or 過ぎている）場合、refresh_tokenで自動更新する。
-  // refresh_tokenも無効ならnullを返し、呼び出し側でログアウト扱いにする。
-  async function refreshUserSession(refreshToken) {
-    if (!refreshToken) return null;
-    try {
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': EDGE_ANON_KEY },
-        body: JSON.stringify({ refresh_token: refreshToken })
-      });
-      if (!res.ok) return null;
-      const authData = await res.json();
-      if (!authData?.access_token || !authData?.user) return null;
-      saveUserSession(authData);
-      return authData;
-    } catch(e) { return null; }
-  }
-  // 保存済みセッションを検証し、必要なら更新した上でログイン状態を復元する。
-  async function restoreSession() {
-    const stored = getUserSession();
-    if (!stored?.user) return null;
-    const now = Math.floor(Date.now() / 1000);
-    if (stored.expires_at && now > stored.expires_at - 300) {
-      const refreshed = await refreshUserSession(stored.refresh_token);
-      if (!refreshed) { clearUserSession(); return null; }
-      return refreshed;
-    }
-    return stored;
   }
   let pendingApplyEvent = null;
 
@@ -1064,7 +1057,42 @@
     renderList();
   }
   function getVisibleEvents() {
-    return showOnlyApplied ? allEvents.filter(e => appliedEventIds.has(e.id)) : allEvents;
+    let evs = showOnlyApplied ? allEvents.filter(e => appliedEventIds.has(e.id)) : allEvents;
+    if (companyFilterValue) evs = evs.filter(e => e.company === companyFilterValue);
+    return evs;
+  }
+
+  // 企業名フィルター
+  let companyFilterValue = '';
+  // 企業名 → 読み仮名（ひらがな）。五十音順ソート用。新しい企業を登録したらここにも追加する。
+  const COMPANY_KANA = {
+    'クスリのアオキ': 'くすりのあおき',
+    'なの花薬局': 'なのはなやっきょく',
+    'パンダ薬局（株式会社ワイエム）': 'ぱんだやっきょく',
+    '株式会社akホールディングス': 'えーけーほーるでぃんぐす',
+    '株式会社アイリスファーマ': 'あいりすふぁーま',
+    '株式会社メディカルシステムネットワーク': 'めでぃかるしすてむねっとわーく',
+    '株式会社南山堂': 'なんざんどう',
+    '実験薬局': 'じっけんやっきょく',
+    '徳永薬局株式会社': 'とくながやっきょく',
+    '(株)ファーマみらい【共創未来グループ】': 'ふぁーまみらい'
+  };
+  function setCompanyFilter(company) {
+    companyFilterValue = company;
+    document.getElementById('companyFilterSelect').classList.toggle('active', !!company);
+    renderList();
+  }
+  function populateCompanyFilter() {
+    const sel = document.getElementById('companyFilterSelect');
+    if (!sel) return;
+    // 読み仮名が登録済みならそれで、未登録の企業（今後の新規登録分）は会社名そのものでソート
+    const companies = [...new Set(allEvents.map(e => e.company))]
+      .sort((a, b) => (COMPANY_KANA[a] || a).localeCompare(COMPANY_KANA[b] || b, 'ja'));
+    const keep = companyFilterValue;
+    sel.innerHTML = '<option value="">すべての企業</option>'
+      + companies.map(c => `<option value="${c}">${shortCompany(c)}</option>`).join('');
+    if (keep && companies.includes(keep)) sel.value = keep;
+    else { companyFilterValue = ''; sel.classList.remove('active'); }
   }
 
   // 日付文字列 → イベント配列
@@ -1102,6 +1130,7 @@
       console.error('イベント取得エラー:', err);
       allEvents = [];
     }
+    populateCompanyFilter();
     // 直近の開催予定（過去は除く）の月を初期表示にし、その日を選択
     const upcoming = allEvents.find(e => !e.isPast) || allEvents[0];
     if (upcoming) {
@@ -1848,7 +1877,7 @@
       return;
     }
     const { error } = await db.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://pharmacalendar.jp'
+      redirectTo: 'https://pharmacalendar.vercel.app'
     });
     if (error) {
       errEl.textContent = '送信に失敗しました: ' + error.message;
@@ -2032,45 +2061,16 @@
     renderList();
     loadEvents();
 
-    const session = await restoreSession();
-    if (session?.user) {
-      sessionToken = session.access_token;
-      currentUser = session.user;
-      updateNavForUser(session.user);
-      ensureProfile(session.user).catch(() => {});
+    const stored = getUserSession();
+    if (stored?.user) {
+      sessionToken = stored.access_token;
+      currentUser = stored.user;
+      updateNavForUser(stored.user);
+      ensureProfile(stored.user).catch(() => {});
       await loadMyApplications();
       renderList();
     }
   })();
-
-  // =============================================
-  // セッションの自動延長
-  // アクセストークンは短時間（既定1時間）で失効するため、
-  // 定期的・かつアプリ復帰時にrefresh_tokenで裏側から更新し続ける。
-  // =============================================
-  setInterval(async () => {
-    if (!currentUser) return;
-    const refreshed = await restoreSession();
-    if (refreshed?.user) {
-      sessionToken = refreshed.access_token;
-      currentUser = refreshed.user;
-    } else {
-      sessionToken = null;
-      currentUser = null;
-      appliedEventIds = new Set();
-      updateNavForLoggedOut();
-      renderList();
-    }
-  }, 30 * 60 * 1000);
-
-  document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState !== 'visible' || !currentUser) return;
-    const refreshed = await restoreSession();
-    if (refreshed?.user) {
-      sessionToken = refreshed.access_token;
-      currentUser = refreshed.user;
-    }
-  });
 </script>
 <script>
   if ('serviceWorker' in navigator) {
