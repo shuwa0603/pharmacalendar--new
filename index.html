@@ -193,20 +193,6 @@
     .filter-btn:hover{border-color:var(--pine);color:var(--pine)}
     .filter-btn.active{background:var(--pine);border-color:var(--pine);color:#fff}
 
-    /* 企業名フィルター（常時表示） */
-    .company-filter{padding:0 16px 10px}
-    .company-filter select{
-      width:100%;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
-      border:1.5px solid var(--line);border-radius:999px;
-      padding:9px 34px 9px 16px;background:#fff;cursor:pointer;
-      appearance:none;-webkit-appearance:none;
-      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B7A70' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");
-      background-repeat:no-repeat;background-position:right 14px center;
-      transition:.15s;
-    }
-    .company-filter select:hover{border-color:var(--pine)}
-    .company-filter select.active{border-color:var(--pine);color:var(--pine)}
-
     /* grid */
     .grid{
       display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
@@ -486,15 +472,9 @@
     <div class="cal-head">
       <div class="cal-title"><span class="yr num" id="calYear"></span><span class="mo" id="calMonth"></span></div>
       <div class="cal-nav">
-        <button aria-label="前の3週間" onclick="changeCalWeek(-1)">‹</button>
-        <button aria-label="次の3週間" onclick="changeCalWeek(1)">›</button>
+        <button aria-label="前の月" onclick="changeCalMonth(-1)">‹</button>
+        <button aria-label="次の月" onclick="changeCalMonth(1)">›</button>
       </div>
-    </div>
-
-    <div class="company-filter">
-      <select id="companyFilterSelect" onchange="setCompanyFilter(this.value)">
-        <option value="">すべての企業</option>
-      </select>
     </div>
 
     <div class="my-filter" id="myFilter">
@@ -814,13 +794,40 @@
       if (!raw) return null;
       const s = JSON.parse(raw);
       if (!s?.access_token || !s?.user) return null;
-      const now = Math.floor(Date.now() / 1000);
-      if (s.expires_at && now > s.expires_at) { localStorage.removeItem(PHARMA_SESSION_KEY); return null; }
       return s;
     } catch(e) { return null; }
   }
   function clearUserSession() {
     try { localStorage.removeItem(PHARMA_SESSION_KEY); } catch(e) {}
+  }
+  // access_tokenの有効期限が近い（or 過ぎている）場合、refresh_tokenで自動更新する。
+  // refresh_tokenも無効ならnullを返し、呼び出し側でログアウト扱いにする。
+  async function refreshUserSession(refreshToken) {
+    if (!refreshToken) return null;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': EDGE_ANON_KEY },
+        body: JSON.stringify({ refresh_token: refreshToken })
+      });
+      if (!res.ok) return null;
+      const authData = await res.json();
+      if (!authData?.access_token || !authData?.user) return null;
+      saveUserSession(authData);
+      return authData;
+    } catch(e) { return null; }
+  }
+  // 保存済みセッションを検証し、必要なら更新した上でログイン状態を復元する。
+  async function restoreSession() {
+    const stored = getUserSession();
+    if (!stored?.user) return null;
+    const now = Math.floor(Date.now() / 1000);
+    if (stored.expires_at && now > stored.expires_at - 300) {
+      const refreshed = await refreshUserSession(stored.refresh_token);
+      if (!refreshed) { clearUserSession(); return null; }
+      return refreshed;
+    }
+    return stored;
   }
   let pendingApplyEvent = null;
 
@@ -1057,42 +1064,7 @@
     renderList();
   }
   function getVisibleEvents() {
-    let evs = showOnlyApplied ? allEvents.filter(e => appliedEventIds.has(e.id)) : allEvents;
-    if (companyFilterValue) evs = evs.filter(e => e.company === companyFilterValue);
-    return evs;
-  }
-
-  // 企業名フィルター
-  let companyFilterValue = '';
-  // 企業名 → 読み仮名（ひらがな）。五十音順ソート用。新しい企業を登録したらここにも追加する。
-  const COMPANY_KANA = {
-    'クスリのアオキ': 'くすりのあおき',
-    'なの花薬局': 'なのはなやっきょく',
-    'パンダ薬局（株式会社ワイエム）': 'ぱんだやっきょく',
-    '株式会社akホールディングス': 'えーけーほーるでぃんぐす',
-    '株式会社アイリスファーマ': 'あいりすふぁーま',
-    '株式会社メディカルシステムネットワーク': 'めでぃかるしすてむねっとわーく',
-    '株式会社南山堂': 'なんざんどう',
-    '実験薬局': 'じっけんやっきょく',
-    '徳永薬局株式会社': 'とくながやっきょく',
-    '(株)ファーマみらい【共創未来グループ】': 'ふぁーまみらい'
-  };
-  function setCompanyFilter(company) {
-    companyFilterValue = company;
-    document.getElementById('companyFilterSelect').classList.toggle('active', !!company);
-    renderList();
-  }
-  function populateCompanyFilter() {
-    const sel = document.getElementById('companyFilterSelect');
-    if (!sel) return;
-    // 読み仮名が登録済みならそれで、未登録の企業（今後の新規登録分）は会社名そのものでソート
-    const companies = [...new Set(allEvents.map(e => e.company))]
-      .sort((a, b) => (COMPANY_KANA[a] || a).localeCompare(COMPANY_KANA[b] || b, 'ja'));
-    const keep = companyFilterValue;
-    sel.innerHTML = '<option value="">すべての企業</option>'
-      + companies.map(c => `<option value="${c}">${shortCompany(c)}</option>`).join('');
-    if (keep && companies.includes(keep)) sel.value = keep;
-    else { companyFilterValue = ''; sel.classList.remove('active'); }
+    return showOnlyApplied ? allEvents.filter(e => appliedEventIds.has(e.id)) : allEvents;
   }
 
   // 日付文字列 → イベント配列
@@ -1130,14 +1102,13 @@
       console.error('イベント取得エラー:', err);
       allEvents = [];
     }
-    populateCompanyFilter();
-    // 表示範囲（今日を含む週から5週間）内に直近の開催予定があればその日を選択、なければ今日のまま
-    const rangeStartKey = dateKey(viewStart);
-    const rangeEndKey = dateKey(addDays(viewStart, CAL_DAYS - 1));
-    const upcoming = allEvents.find(e => !e.isPast);
+    // 直近の開催予定（過去は除く）の月を初期表示にし、その日を選択
+    const upcoming = allEvents.find(e => !e.isPast) || allEvents[0];
     if (upcoming) {
-      const uKey = dateKey(new Date(upcoming.date));
-      if (uKey >= rangeStartKey && uKey <= rangeEndKey) selectedKey = uKey;
+      const first = new Date(upcoming.date);
+      calYear = first.getFullYear();
+      calMonth = first.getMonth();
+      selectedKey = dateKey(first);
     }
     renderList();
     updateBanner();
@@ -1176,19 +1147,8 @@
   // カレンダー
   // =============================================
   const _today = new Date();
-  function addDays(d, n) {
-    const r = new Date(d);
-    r.setDate(r.getDate() + n);
-    return r;
-  }
-  function startOfWeek(d) {
-    const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    s.setDate(s.getDate() - s.getDay());
-    return s;
-  }
-  // カレンダーは常に5週間（35日）表示。今日を含む週から始まるので、
-  // 過去日でグレーアウトするのは1行目の数日だけで済む。
-  let viewStart = startOfWeek(_today);
+  let calYear = _today.getFullYear();
+  let calMonth = _today.getMonth();      // 0-indexed
   let selectedKey = dateKey(_today);     // 選択中の日付
 
   function renderList() {
@@ -1196,43 +1156,37 @@
     renderPanel();
   }
 
-  const CAL_ROWS = 5;
-  const CAL_DAYS = CAL_ROWS * 7;
-
-  // ヘッダーの年月表示（表示範囲が月をまたぐ場合は「7〜8月」のように表示）
-  function renderCalendarHeader(start, end) {
-    const y1 = start.getFullYear(), m1 = start.getMonth() + 1;
-    const y2 = end.getFullYear(), m2 = end.getMonth() + 1;
-    document.getElementById('calYear').textContent = y1;
-    if (y1 === y2 && m1 === m2) {
-      document.getElementById('calMonth').textContent = `${m1}月`;
-    } else if (y1 === y2) {
-      document.getElementById('calMonth').textContent = `${m1}〜${m2}月`;
-    } else {
-      document.getElementById('calMonth').textContent = `${m1}月〜${y2}年${m2}月`;
-    }
-  }
-
   function renderCalendar() {
+    document.getElementById('calYear').textContent = calYear;
+    document.getElementById('calMonth').textContent = `${calMonth + 1}月`;
+
     const byDate = buildEventsByDate();
     const grid = document.getElementById('grid');
-    const endDate = addDays(viewStart, CAL_DAYS - 1);
-    renderCalendarHeader(viewStart, endDate);
-    const todayKey = dateKey(_today);
+    const firstDow = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const prevMonthLastDay = new Date(calYear, calMonth, 0).getDate();
+    const isThisMonth = _today.getFullYear() === calYear && _today.getMonth() === calMonth;
+    const todayDate = _today.getDate();
 
     let html = '';
     ['日','月','火','水','木','金','土'].forEach((d,i) => {
       html += `<div class="dow ${i===0?'sun':i===6?'sat':''}">${d}</div>`;
     });
 
-    // 5週間（35日）、今日を含む週から順に表示。月をまたいでもすべて実在の日として扱う。
-    for (let i = 0; i < CAL_DAYS; i++) {
-      const d = addDays(viewStart, i);
-      const dow = d.getDay();
-      const dayNum = d.getDate();
-      const key = dateKey(d);
+    // 前月末（グレー）
+    for (let i = 0; i < firstDow; i++) {
+      const prevDay = prevMonthLastDay - firstDow + 1 + i;
+      const col = i % 7;
+      html += `<div class="cell is-other ${col===0?'sun':col===6?'sat':''}"><span class="d num">${prevDay}</span></div>`;
+    }
+
+    // 当月
+    let cellCount = firstDow;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dow = new Date(calYear, calMonth, d).getDay();
+      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       const evs = byDate[key] || [];
-      const isToday = key === todayKey;
+      const isToday = isThisMonth && d === todayDate;
       const isSel = key === selectedKey;
 
       // チップ（企業名の重複を除いて最大2件＋残数）
@@ -1252,10 +1206,18 @@
         + (isToday?' is-today':'')
         + (evs.length?' has-ev':'')
         + (isSel?' is-selected':'');
-      const handler = evs.length ? ` onclick="selectDay('${key}')" aria-label="${d.getMonth()+1}月${dayNum}日 説明会${evs.length}件"` : '';
-      html += `<${tag} class="${cls}"${handler}><span class="d num">${dayNum}</span>`
+      const handler = evs.length ? ` onclick="selectDay('${key}')" aria-label="${calMonth+1}月${d}日 説明会${evs.length}件"` : '';
+      html += `<${tag} class="${cls}"${handler}><span class="d num">${d}</span>`
         + (evs.length ? `<span class="evchips">${chips}</span>` : '')
         + `</${tag}>`;
+      cellCount++;
+    }
+
+    // 翌月頭（グレー・週の余りを埋める）
+    let trail = (7 - (cellCount % 7)) % 7;
+    for (let i = 0; i < trail; i++) {
+      const col = (cellCount + i) % 7;
+      html += `<div class="cell is-other ${col===0?'sun':col===6?'sat':''}"><span class="d num">${i+1}</span></div>`;
     }
 
     grid.innerHTML = html;
@@ -1345,16 +1307,16 @@
       </div>`;
   }
 
-  // 3行（21日）分ずつ表示範囲をずらす
-  function changeCalWeek(delta) {
-    viewStart = addDays(viewStart, delta * 21);
-    // ずらした結果、選択中の日が表示範囲外になったら、範囲内の最初のイベント日（なければ表示開始日）に合わせる
+  function changeCalMonth(delta) {
+    calMonth += delta;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    if (calMonth < 0)  { calMonth = 11; calYear--; }
+    // 月を変えたら、その月に選択日がなければ最初のイベント日（なければ空）に合わせる
     const byDate = buildEventsByDate();
-    const startKey = dateKey(viewStart);
-    const endKey = dateKey(addDays(viewStart, CAL_DAYS - 1));
-    if (selectedKey < startKey || selectedKey > endKey) {
-      const daysWithEv = Object.keys(byDate).filter(k => k >= startKey && k <= endKey).sort();
-      selectedKey = daysWithEv.length ? daysWithEv[0] : startKey;
+    const prefix = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
+    if (!selectedKey.startsWith(prefix)) {
+      const daysWithEv = Object.keys(byDate).filter(k => k.startsWith(prefix)).sort();
+      selectedKey = daysWithEv.length ? daysWithEv[0] : `${prefix}-01`;
     }
     renderCalendar();
     renderPanel();
@@ -1886,7 +1848,7 @@
       return;
     }
     const { error } = await db.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://pharmacalendar.vercel.app'
+      redirectTo: 'https://pharmacalendar.jp'
     });
     if (error) {
       errEl.textContent = '送信に失敗しました: ' + error.message;
@@ -2070,16 +2032,45 @@
     renderList();
     loadEvents();
 
-    const stored = getUserSession();
-    if (stored?.user) {
-      sessionToken = stored.access_token;
-      currentUser = stored.user;
-      updateNavForUser(stored.user);
-      ensureProfile(stored.user).catch(() => {});
+    const session = await restoreSession();
+    if (session?.user) {
+      sessionToken = session.access_token;
+      currentUser = session.user;
+      updateNavForUser(session.user);
+      ensureProfile(session.user).catch(() => {});
       await loadMyApplications();
       renderList();
     }
   })();
+
+  // =============================================
+  // セッションの自動延長
+  // アクセストークンは短時間（既定1時間）で失効するため、
+  // 定期的・かつアプリ復帰時にrefresh_tokenで裏側から更新し続ける。
+  // =============================================
+  setInterval(async () => {
+    if (!currentUser) return;
+    const refreshed = await restoreSession();
+    if (refreshed?.user) {
+      sessionToken = refreshed.access_token;
+      currentUser = refreshed.user;
+    } else {
+      sessionToken = null;
+      currentUser = null;
+      appliedEventIds = new Set();
+      updateNavForLoggedOut();
+      renderList();
+    }
+  }, 30 * 60 * 1000);
+
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible' || !currentUser) return;
+    const refreshed = await restoreSession();
+    if (refreshed?.user) {
+      sessionToken = refreshed.access_token;
+      currentUser = refreshed.user;
+    }
+  });
 </script>
 <script>
   if ('serviceWorker' in navigator) {
