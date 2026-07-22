@@ -265,7 +265,7 @@
     .evchip.cat-drug{color:var(--drug);background:var(--drug-pale)}
     .evchip.cat-pharma{color:var(--pharma);background:var(--pharma-pale)}
     .evchip.more{color:var(--ink-soft);background:transparent;font-weight:800}
-    .evchip.is-past{color:#9CA8A0;background:#EEF1ED}
+    /* 過去の説明会もグレーアウトせず通常のカテゴリ色で表示する方針（is-pastスタイルは廃止） */
     .cell:focus-visible{outline:3px solid #2E8B62;outline-offset:-3px;z-index:1}
 
     /* day panel */
@@ -284,8 +284,6 @@
       border-radius:14px;padding:11px 12px;margin-bottom:8px;cursor:pointer;
     }
     .ev:last-child{margin-bottom:0}
-    .ev.is-past{opacity:.55}
-    .ev.is-past .ev-bar{background:#9CA8A0!important}
     .ev-bar{width:4px;align-self:stretch;border-radius:99px;flex-shrink:0;background:var(--pine)}
     .ev-bar.cat-drug{background:var(--drug)}
     .ev-bar.cat-pharma{background:var(--pharma)}
@@ -1283,7 +1281,7 @@
         if (!uniq.find(u => u.name === nm)) uniq.push({ name: nm, cat: e.category || 'pharmacy', isPast: e.isPast });
       });
       let chips = uniq.slice(0, 2).map(u =>
-        `<span class="evchip ${u.isPast ? 'is-past' : 'cat-'+u.cat}">${u.name}</span>`
+        `<span class="evchip cat-${u.cat}">${u.name}</span>`
       ).join('');
       if (uniq.length > 2) chips += `<span class="evchip more">+${uniq.length - 2}</span>`;
 
@@ -1375,7 +1373,7 @@
     }
 
     return `
-      <div class="ev ${e.isPast ? 'is-past' : ''}" onclick="openDetailModal('${e.id}')">
+      <div class="ev" onclick="openDetailModal('${e.id}')">
         <span class="ev-bar cat-${cat}"></span>
         <span class="ev-body">
           <b>${e.company}</b>
