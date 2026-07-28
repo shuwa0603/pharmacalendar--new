@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "jp.pharmacalendar.twa",
+    "sha256_cert_fingerprints": ["22:85:3D:87:94:7B:84:2F:CD:00:21:1D:4D:5B:AA:E9:38:BC:89:3F:AD:FC:83:34:A1:11:C5:42:9D:AF:0A:07"]
+  }
+}]
