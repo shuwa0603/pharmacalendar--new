@@ -193,6 +193,20 @@
     .filter-btn:hover{border-color:var(--pine);color:var(--pine)}
     .filter-btn.active{background:var(--pine);border-color:var(--pine);color:#fff}
 
+    /* 企業名フィルター（常時表示） */
+    .company-filter{padding:0 16px 10px}
+    .company-filter select{
+      width:100%;font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);
+      border:1.5px solid var(--line);border-radius:999px;
+      padding:9px 34px 9px 16px;background:#fff;cursor:pointer;
+      appearance:none;-webkit-appearance:none;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236B7A70' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");
+      background-repeat:no-repeat;background-position:right 14px center;
+      transition:.15s;
+    }
+    .company-filter select:hover{border-color:var(--pine)}
+    .company-filter select.active{border-color:var(--pine);color:var(--pine)}
+
     /* grid */
     .grid{
       display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
@@ -251,6 +265,7 @@
     .evchip.cat-drug{color:var(--drug);background:var(--drug-pale)}
     .evchip.cat-pharma{color:var(--pharma);background:var(--pharma-pale)}
     .evchip.more{color:var(--ink-soft);background:transparent;font-weight:800}
+    /* 過去（終了）の説明会はグレーアウト表示 */
     .evchip.is-past{color:#9CA8A0;background:#EEF1ED}
     .cell:focus-visible{outline:3px solid #2E8B62;outline-offset:-3px;z-index:1}
 
@@ -475,6 +490,12 @@
         <button aria-label="前の月" onclick="changeCalMonth(-1)">‹</button>
         <button aria-label="次の月" onclick="changeCalMonth(1)">›</button>
       </div>
+    </div>
+
+    <div class="company-filter">
+      <select id="companyFilterSelect" onchange="setCompanyFilter(this.value)">
+        <option value="">すべての企業</option>
+      </select>
     </div>
 
     <div class="my-filter" id="myFilter">
@@ -800,34 +821,48 @@
   function clearUserSession() {
     try { localStorage.removeItem(PHARMA_SESSION_KEY); } catch(e) {}
   }
-  // access_tokenの有効期限が近い（or 過ぎている）場合、refresh_tokenで自動更新する。
-  // refresh_tokenも無効ならnullを返し、呼び出し側でログアウト扱いにする。
-  async function refreshUserSession(refreshToken) {
-    if (!refreshToken) return null;
+
+  // アクセストークンが切れている（または残り5分未満の）場合、
+  // refresh_token を使ってセッションを自動更新する。
+  // 失敗した場合のみセッションを破棄して null を返す。
+  async function refreshUserSession(stored) {
+    if (!stored?.refresh_token) { clearUserSession(); return null; }
+    const now = Math.floor(Date.now() / 1000);
+    if (stored.expires_at && stored.expires_at - now > 300) return stored;
+
     try {
-      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': EDGE_ANON_KEY },
-        body: JSON.stringify({ refresh_token: refreshToken })
-      });
-      if (!res.ok) return null;
+      const res = await fetch(
+        `${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': EDGE_ANON_KEY },
+          body: JSON.stringify({ refresh_token: stored.refresh_token })
+        }
+      );
+      if (!res.ok) { clearUserSession(); return null; }
       const authData = await res.json();
-      if (!authData?.access_token || !authData?.user) return null;
+      if (!authData?.access_token) { clearUserSession(); return null; }
       saveUserSession(authData);
       return authData;
-    } catch(e) { return null; }
+    } catch(e) {
+      return stored; // ネットワークエラー時は破棄せずそのまま維持（次回リトライ）
+    }
   }
-  // 保存済みセッションを検証し、必要なら更新した上でログイン状態を復元する。
+
+  // 起動時・復帰時に呼ぶ。必要なら自動更新した上でログイン状態を復元する。
   async function restoreSession() {
     const stored = getUserSession();
-    if (!stored?.user) return null;
-    const now = Math.floor(Date.now() / 1000);
-    if (stored.expires_at && now > stored.expires_at - 300) {
-      const refreshed = await refreshUserSession(stored.refresh_token);
-      if (!refreshed) { clearUserSession(); return null; }
-      return refreshed;
+    if (!stored) return null;
+    const fresh = await refreshUserSession(stored);
+    if (!fresh) {
+      sessionToken = null;
+      currentUser = null;
+      updateNavForLoggedOut();
+      return null;
     }
-    return stored;
+    sessionToken = fresh.access_token;
+    currentUser = fresh.user;
+    return fresh;
   }
   let pendingApplyEvent = null;
 
@@ -1064,7 +1099,42 @@
     renderList();
   }
   function getVisibleEvents() {
-    return showOnlyApplied ? allEvents.filter(e => appliedEventIds.has(e.id)) : allEvents;
+    let evs = showOnlyApplied ? allEvents.filter(e => appliedEventIds.has(e.id)) : allEvents;
+    if (companyFilterValue) evs = evs.filter(e => e.company === companyFilterValue);
+    return evs;
+  }
+
+  // 企業名フィルター
+  let companyFilterValue = '';
+  // 企業名 → 読み仮名（ひらがな）。五十音順ソート用。新しい企業を登録したらここにも追加する。
+  const COMPANY_KANA = {
+    'クスリのアオキ': 'くすりのあおき',
+    'なの花薬局': 'なのはなやっきょく',
+    'パンダ薬局（株式会社ワイエム）': 'ぱんだやっきょく',
+    '株式会社akホールディングス': 'えーけーほーるでぃんぐす',
+    '株式会社アイリスファーマ': 'あいりすふぁーま',
+    '株式会社メディカルシステムネットワーク': 'めでぃかるしすてむねっとわーく',
+    '株式会社南山堂': 'なんざんどう',
+    '実験薬局': 'じっけんやっきょく',
+    '徳永薬局株式会社': 'とくながやっきょく',
+    '(株)ファーマみらい【共創未来グループ】': 'ふぁーまみらい'
+  };
+  function setCompanyFilter(company) {
+    companyFilterValue = company;
+    document.getElementById('companyFilterSelect').classList.toggle('active', !!company);
+    renderList();
+  }
+  function populateCompanyFilter() {
+    const sel = document.getElementById('companyFilterSelect');
+    if (!sel) return;
+    // 読み仮名が登録済みならそれで、未登録の企業（今後の新規登録分）は会社名そのものでソート
+    const companies = [...new Set(allEvents.map(e => e.company))]
+      .sort((a, b) => (COMPANY_KANA[a] || a).localeCompare(COMPANY_KANA[b] || b, 'ja'));
+    const keep = companyFilterValue;
+    sel.innerHTML = '<option value="">すべての企業</option>'
+      + companies.map(c => `<option value="${c}">${shortCompany(c)}</option>`).join('');
+    if (keep && companies.includes(keep)) sel.value = keep;
+    else { companyFilterValue = ''; sel.classList.remove('active'); }
   }
 
   // 日付文字列 → イベント配列
@@ -1102,13 +1172,14 @@
       console.error('イベント取得エラー:', err);
       allEvents = [];
     }
-    // 直近の開催予定（過去は除く）の月を初期表示にし、その日を選択
-    const upcoming = allEvents.find(e => !e.isPast) || allEvents[0];
+    populateCompanyFilter();
+    // 表示中の月に直近の開催予定があればその日を選択、なければ今日のまま
+    const monthStartKey = dateKey(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1));
+    const monthEndKey = dateKey(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0));
+    const upcoming = allEvents.find(e => !e.isPast);
     if (upcoming) {
-      const first = new Date(upcoming.date);
-      calYear = first.getFullYear();
-      calMonth = first.getMonth();
-      selectedKey = dateKey(first);
+      const uKey = dateKey(new Date(upcoming.date));
+      if (uKey >= monthStartKey && uKey <= monthEndKey) selectedKey = uKey;
     }
     renderList();
     updateBanner();
@@ -1147,8 +1218,18 @@
   // カレンダー
   // =============================================
   const _today = new Date();
-  let calYear = _today.getFullYear();
-  let calMonth = _today.getMonth();      // 0-indexed
+  function addDays(d, n) {
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  }
+  function startOfWeek(d) {
+    const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    s.setDate(s.getDate() - s.getDay());
+    return s;
+  }
+  // カレンダーは月ごとに表示する。viewMonth はその月の1日を指す。
+  let viewMonth = new Date(_today.getFullYear(), _today.getMonth(), 1);
   let selectedKey = dateKey(_today);     // 選択中の日付
 
   function renderList() {
@@ -1156,37 +1237,47 @@
     renderPanel();
   }
 
-  function renderCalendar() {
-    document.getElementById('calYear').textContent = calYear;
-    document.getElementById('calMonth').textContent = `${calMonth + 1}月`;
+  // ヘッダーの年月表示（表示範囲が月をまたぐ場合は「7〜8月」のように表示）
+  function renderCalendarHeader(start, end) {
+    const y1 = start.getFullYear(), m1 = start.getMonth() + 1;
+    const y2 = end.getFullYear(), m2 = end.getMonth() + 1;
+    document.getElementById('calYear').textContent = y1;
+    if (y1 === y2 && m1 === m2) {
+      document.getElementById('calMonth').textContent = `${m1}月`;
+    } else if (y1 === y2) {
+      document.getElementById('calMonth').textContent = `${m1}〜${m2}月`;
+    } else {
+      document.getElementById('calMonth').textContent = `${m1}月〜${y2}年${m2}月`;
+    }
+  }
 
+  function renderCalendar() {
     const byDate = buildEventsByDate();
     const grid = document.getElementById('grid');
-    const firstDow = new Date(calYear, calMonth, 1).getDay();
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    const prevMonthLastDay = new Date(calYear, calMonth, 0).getDate();
-    const isThisMonth = _today.getFullYear() === calYear && _today.getMonth() === calMonth;
-    const todayDate = _today.getDate();
+    renderCalendarHeader(viewMonth, viewMonth);
+    const todayKey = dateKey(_today);
 
     let html = '';
     ['日','月','火','水','木','金','土'].forEach((d,i) => {
       html += `<div class="dow ${i===0?'sun':i===6?'sat':''}">${d}</div>`;
     });
 
-    // 前月末（グレー）
-    for (let i = 0; i < firstDow; i++) {
-      const prevDay = prevMonthLastDay - firstDow + 1 + i;
-      const col = i % 7;
-      html += `<div class="cell is-other ${col===0?'sun':col===6?'sat':''}"><span class="d num">${prevDay}</span></div>`;
-    }
+    const year = viewMonth.getFullYear();
+    const month = viewMonth.getMonth();
+    const firstDow = new Date(year, month, 1).getDay();       // 月初の曜日
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const totalCells = Math.ceil((firstDow + daysInMonth) / 7) * 7;  // 週単位で埋める
 
-    // 当月
-    let cellCount = firstDow;
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dow = new Date(calYear, calMonth, d).getDay();
-      const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    // 月初の曜日ぶんの前月末日 → 当月 → 翌月頭 の順に、週がそろうまで表示。
+    // 当月以外の日は is-other でグレー表示する。
+    for (let i = 0; i < totalCells; i++) {
+      const d = new Date(year, month, 1 + (i - firstDow));
+      const isOther = d.getMonth() !== month;
+      const dow = d.getDay();
+      const dayNum = d.getDate();
+      const key = dateKey(d);
       const evs = byDate[key] || [];
-      const isToday = isThisMonth && d === todayDate;
+      const isToday = key === todayKey;
       const isSel = key === selectedKey;
 
       // チップ（企業名の重複を除いて最大2件＋残数）
@@ -1203,21 +1294,14 @@
       const tag = evs.length ? 'button' : 'div';
       const cls = 'cell'
         + (dow===0?' sun':dow===6?' sat':'')
+        + (isOther?' is-other':'')
         + (isToday?' is-today':'')
         + (evs.length?' has-ev':'')
         + (isSel?' is-selected':'');
-      const handler = evs.length ? ` onclick="selectDay('${key}')" aria-label="${calMonth+1}月${d}日 説明会${evs.length}件"` : '';
-      html += `<${tag} class="${cls}"${handler}><span class="d num">${d}</span>`
+      const handler = evs.length ? ` onclick="selectDay('${key}')" aria-label="${d.getMonth()+1}月${dayNum}日 説明会${evs.length}件"` : '';
+      html += `<${tag} class="${cls}"${handler}><span class="d num">${dayNum}</span>`
         + (evs.length ? `<span class="evchips">${chips}</span>` : '')
         + `</${tag}>`;
-      cellCount++;
-    }
-
-    // 翌月頭（グレー・週の余りを埋める）
-    let trail = (7 - (cellCount % 7)) % 7;
-    for (let i = 0; i < trail; i++) {
-      const col = (cellCount + i) % 7;
-      html += `<div class="cell is-other ${col===0?'sun':col===6?'sat':''}"><span class="d num">${i+1}</span></div>`;
     }
 
     grid.innerHTML = html;
@@ -1307,16 +1391,19 @@
       </div>`;
   }
 
+  // 月ごとにページを切り替える
   function changeCalMonth(delta) {
-    calMonth += delta;
-    if (calMonth > 11) { calMonth = 0; calYear++; }
-    if (calMonth < 0)  { calMonth = 11; calYear--; }
-    // 月を変えたら、その月に選択日がなければ最初のイベント日（なければ空）に合わせる
+    viewMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + delta, 1);
+    // その月に説明会があれば最初の開催日を、なければ月初（今月なら今日）を選択
     const byDate = buildEventsByDate();
-    const prefix = `${calYear}-${String(calMonth+1).padStart(2,'0')}`;
-    if (!selectedKey.startsWith(prefix)) {
-      const daysWithEv = Object.keys(byDate).filter(k => k.startsWith(prefix)).sort();
-      selectedKey = daysWithEv.length ? daysWithEv[0] : `${prefix}-01`;
+    const monthStartKey = dateKey(new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1));
+    const monthEndKey = dateKey(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 0));
+    const daysWithEv = Object.keys(byDate).filter(k => k >= monthStartKey && k <= monthEndKey).sort();
+    if (daysWithEv.length) {
+      selectedKey = daysWithEv[0];
+    } else {
+      const todayKey = dateKey(_today);
+      selectedKey = (todayKey >= monthStartKey && todayKey <= monthEndKey) ? todayKey : monthStartKey;
     }
     renderCalendar();
     renderPanel();
@@ -1848,7 +1935,7 @@
       return;
     }
     const { error } = await db.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://pharmacalendar.jp'
+      redirectTo: 'https://pharmacalendar.vercel.app'
     });
     if (error) {
       errEl.textContent = '送信に失敗しました: ' + error.message;
@@ -2032,45 +2119,22 @@
     renderList();
     loadEvents();
 
-    const session = await restoreSession();
-    if (session?.user) {
-      sessionToken = session.access_token;
-      currentUser = session.user;
-      updateNavForUser(session.user);
-      ensureProfile(session.user).catch(() => {});
+    const restored = await restoreSession();
+    if (restored?.user) {
+      updateNavForUser(restored.user);
+      ensureProfile(restored.user).catch(() => {});
       await loadMyApplications();
       renderList();
     }
+
+    // 30分ごとに自動更新（開きっぱなしのタブ・アプリでもトークンを切らさない）
+    setInterval(() => { if (sessionToken) restoreSession(); }, 30 * 60 * 1000);
+
+    // アプリ／タブがバックグラウンドから復帰した時にも更新
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && sessionToken) restoreSession();
+    });
   })();
-
-  // =============================================
-  // セッションの自動延長
-  // アクセストークンは短時間（既定1時間）で失効するため、
-  // 定期的・かつアプリ復帰時にrefresh_tokenで裏側から更新し続ける。
-  // =============================================
-  setInterval(async () => {
-    if (!currentUser) return;
-    const refreshed = await restoreSession();
-    if (refreshed?.user) {
-      sessionToken = refreshed.access_token;
-      currentUser = refreshed.user;
-    } else {
-      sessionToken = null;
-      currentUser = null;
-      appliedEventIds = new Set();
-      updateNavForLoggedOut();
-      renderList();
-    }
-  }, 30 * 60 * 1000);
-
-  document.addEventListener('visibilitychange', async () => {
-    if (document.visibilityState !== 'visible' || !currentUser) return;
-    const refreshed = await restoreSession();
-    if (refreshed?.user) {
-      sessionToken = refreshed.access_token;
-      currentUser = refreshed.user;
-    }
-  });
 </script>
 <script>
   if ('serviceWorker' in navigator) {
