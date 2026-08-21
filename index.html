@@ -1251,11 +1251,28 @@
     }
   }
 
+  // 表示中の月に各企業が「何日」開催するかを数える。
+  // 開催日数が少ない企業ほどカレンダーのチップで上に、多い企業ほど下に表示するために使う。
+  function buildCompanyMonthCount() {
+    const y = viewMonth.getFullYear(), m = viewMonth.getMonth();
+    const daysByCompany = {};   // company（正式名称） -> 開催日のSet
+    getVisibleEvents().forEach(e => {
+      const d = new Date(e.date);
+      if (d.getFullYear() === y && d.getMonth() === m) {
+        (daysByCompany[e.company] = daysByCompany[e.company] || new Set()).add(dateKey(d));
+      }
+    });
+    const count = {};
+    Object.keys(daysByCompany).forEach(c => { count[c] = daysByCompany[c].size; });
+    return count;
+  }
+
   function renderCalendar() {
     const byDate = buildEventsByDate();
     const grid = document.getElementById('grid');
     renderCalendarHeader(viewMonth, viewMonth);
     const todayKey = dateKey(_today);
+    const monthCount = buildCompanyMonthCount();   // 企業ごとの月内開催日数
 
     let html = '';
     ['日','月','火','水','木','金','土'].forEach((d,i) => {
@@ -1284,8 +1301,10 @@
       const uniq = [];
       evs.forEach(e => {
         const nm = shortCompany(e.company);
-        if (!uniq.find(u => u.name === nm)) uniq.push({ name: nm, cat: e.category || 'pharmacy', isPast: e.isPast });
+        if (!uniq.find(u => u.name === nm)) uniq.push({ name: nm, cat: e.category || 'pharmacy', isPast: e.isPast, company: e.company });
       });
+      // 月内の開催日数が少ない企業を上に、多い企業を下に並べる（同数なら時間順を維持）
+      uniq.sort((a, b) => (monthCount[a.company] || 0) - (monthCount[b.company] || 0));
       let chips = uniq.slice(0, 2).map(u =>
         `<span class="evchip ${u.isPast ? 'is-past' : 'cat-'+u.cat}">${u.name}</span>`
       ).join('');
