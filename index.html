@@ -265,7 +265,8 @@
     .evchip.cat-drug{color:var(--drug);background:var(--drug-pale)}
     .evchip.cat-pharma{color:var(--pharma);background:var(--pharma-pale)}
     .evchip.more{color:var(--ink-soft);background:transparent;font-weight:800}
-    /* 過去の説明会もグレーアウトせず通常のカテゴリ色で表示する方針（is-pastスタイルは無効化） */
+    /* 過去（終了）の説明会はグレーアウト表示 */
+    .evchip.is-past{color:#9CA8A0;background:#EEF1ED}
     .cell:focus-visible{outline:3px solid #2E8B62;outline-offset:-3px;z-index:1}
 
     /* day panel */
@@ -284,6 +285,8 @@
       border-radius:14px;padding:11px 12px;margin-bottom:8px;cursor:pointer;
     }
     .ev:last-child{margin-bottom:0}
+    .ev.is-past{opacity:.55}
+    .ev.is-past .ev-bar{background:#9CA8A0!important}
     .ev-bar{width:4px;align-self:stretch;border-radius:99px;flex-shrink:0;background:var(--pine)}
     .ev-bar.cat-drug{background:var(--drug)}
     .ev-bar.cat-pharma{background:var(--pharma)}
@@ -1303,7 +1306,7 @@
       // 月内の開催日数が少ない企業を上に、多い企業を下に並べる（同数なら時間順を維持）
       uniq.sort((a, b) => (monthCount[a.company] || 0) - (monthCount[b.company] || 0));
       let chips = uniq.slice(0, 2).map(u =>
-        `<span class="evchip cat-${u.cat}">${u.name}</span>`
+        `<span class="evchip ${u.isPast ? 'is-past' : 'cat-'+u.cat}">${u.name}</span>`
       ).join('');
       if (uniq.length > 2) chips += `<span class="evchip more">+${uniq.length - 2}</span>`;
 
@@ -1396,7 +1399,7 @@
     }
 
     return `
-      <div class="ev" onclick="openDetailModal('${e.id}')">
+      <div class="ev ${e.isPast ? 'is-past' : ''}" onclick="openDetailModal('${e.id}')">
         <span class="ev-bar cat-${cat}"></span>
         <span class="ev-body">
           <b>${e.company}</b>
@@ -2153,11 +2156,4 @@
   })();
 </script>
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js').catch(() => {});
-    });
-  }
-</script>
-</body>
-</html>
+  if ('serviceWorker' in navigator
