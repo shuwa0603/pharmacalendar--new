@@ -207,6 +207,55 @@
     .company-filter select:hover{border-color:var(--pine)}
     .company-filter select.active{border-color:var(--pine);color:var(--pine)}
 
+    /* ビュー切り替え（カレンダー / 企業から探す） */
+    .view-switch{display:flex;gap:8px;margin:0 0 12px;position:relative;z-index:3}
+    .view-switch button{
+      flex:1;font-family:inherit;font-size:13px;font-weight:800;
+      border-radius:999px;padding:11px 10px;cursor:pointer;
+      border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.12);color:#fff;
+      transition:.15s;
+    }
+    .view-switch button:hover{background:rgba(255,255,255,.22)}
+    .view-switch button.active{
+      background:#fff;border-color:#fff;color:var(--pine);
+      box-shadow:0 6px 18px -12px rgba(0,0,0,.5);
+    }
+
+    /* 企業から探す */
+    .company-browser{
+      background:var(--card);border-radius:22px;border:1px solid var(--line);
+      box-shadow:0 20px 50px -24px rgba(16,56,44,.35);
+      overflow:hidden;padding:16px;
+    }
+    .cb-head{font-size:18px;font-weight:800;color:var(--pine);margin:4px 4px 14px}
+    .company-card{
+      display:block;width:100%;text-align:left;
+      background:#fff;border:1px solid var(--line);border-radius:16px;
+      padding:14px 16px;margin-bottom:10px;cursor:pointer;
+      font-family:inherit;transition:.15s;
+    }
+    .company-card:hover{border-color:var(--pine);box-shadow:0 6px 18px -10px rgba(16,56,44,.4)}
+    .company-card .cc-name{font-size:15px;font-weight:800;color:var(--ink);
+      display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .company-card .cc-count{font-size:11px;font-weight:700;color:var(--pine);
+      background:var(--mint);border-radius:999px;padding:3px 10px;flex-shrink:0}
+    .company-card .cc-short{font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin-top:6px;
+      display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+    .company-card .cc-more{font-size:12px;font-weight:700;color:var(--pine);margin-top:8px}
+
+    /* 企業詳細 */
+    .cb-back{font-family:inherit;font-size:13px;font-weight:700;color:var(--ink-soft);
+      background:none;border:none;cursor:pointer;padding:4px;margin-bottom:8px}
+    .cb-back:hover{color:var(--pine)}
+    .cd-name{font-size:20px;font-weight:800;color:var(--pine);margin:4px 0 4px;line-height:1.4}
+    .cd-count{font-size:12px;font-weight:700;color:var(--pine);background:var(--mint);
+      border-radius:999px;padding:4px 12px;display:inline-block;margin-bottom:14px}
+    .cd-detail{font-size:14px;color:var(--ink);line-height:1.9;white-space:pre-wrap;margin-bottom:20px}
+    .cd-cta{display:block;width:100%;text-align:center;
+      background:var(--pine);color:#fff;font-family:inherit;font-size:15px;font-weight:800;
+      border:none;border-radius:14px;padding:15px;cursor:pointer;transition:.15s}
+    .cd-cta:hover{background:var(--pine-deep)}
+
     /* grid */
     .grid{
       display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
@@ -483,7 +532,12 @@
 </section>
 
 <main class="cal-wrap">
-  <div class="cal-card">
+  <div class="view-switch">
+    <button id="viewCalBtn" class="active" onclick="setView('calendar')">📅 カレンダー</button>
+    <button id="viewCompanyBtn" onclick="setView('company')">🏢 企業から探す</button>
+  </div>
+
+  <div class="cal-card" id="calCard">
     <div class="cal-head">
       <div class="cal-title"><span class="yr num" id="calYear"></span><span class="mo" id="calMonth"></span></div>
       <div class="cal-nav">
@@ -509,6 +563,11 @@
       <div class="panel-date" id="panel-date"></div>
       <div id="panel-list"></div>
     </div>
+  </div>
+
+  <div class="company-browser" id="companyBrowser" style="display:none">
+    <div id="companyListView"></div>
+    <div id="companyDetailView" style="display:none"></div>
   </div>
 </main>
 
@@ -1109,13 +1168,13 @@
   // 企業名 → 読み仮名（ひらがな）。五十音順ソート用。新しい企業を登録したらここにも追加する。
   const COMPANY_KANA = {
     'クスリのアオキ': 'くすりのあおき',
-    'なの花薬局': 'なのはなやっきょく',
+    'なの花薬局(株式会社メディカルシステムネットワーク)': 'なのはなやっきょく',
+    'ウインファーマグループ': 'ういんふぁーまぐるーぷ',
+    '株式会社うさぎ薬局': 'うさぎやっきょく',
     'パンダ薬局（株式会社ワイエム）': 'ぱんだやっきょく',
     '株式会社akホールディングス': 'えーけーほーるでぃんぐす',
     '株式会社アイリスファーマ': 'あいりすふぁーま',
-    '株式会社メディカルシステムネットワーク': 'めでぃかるしすてむねっとわーく',
     '株式会社南山堂': 'なんざんどう',
-    '実験薬局': 'じっけんやっきょく',
     '徳永薬局株式会社': 'とくながやっきょく',
     '(株)ファーマみらい【共創未来グループ】': 'ふぁーまみらい'
   };
@@ -1135,6 +1194,102 @@
       + companies.map(c => `<option value="${c}">${shortCompany(c)}</option>`).join('');
     if (keep && companies.includes(keep)) sel.value = keep;
     else { companyFilterValue = ''; sel.classList.remove('active'); }
+  }
+
+  // =============================================
+  // 企業から探す（企業一覧 → 企業詳細 → その企業の予約カレンダー）
+  // =============================================
+  // 【要編集】企業紹介文。short=一覧カードの3行紹介 / detail=詳細ページの説明文（改行OK）。
+  // 現在はすべて未記入（準備中）です。実際の紹介文が決まったら各企業の short / detail を書き換えてください。
+  // 新しい企業を登録したらここにも1件追加します。
+  const COMPANY_INFO = {
+    'クスリのアオキ': { short: '（紹介文は準備中です）', detail: '（紹介文は準備中です）' },
+    'なの花薬局(株式会社メディカルシステムネットワーク)': { short: '（紹介文は準備中です）', detail: '（紹介文は準備中です）' },
+    'ウインファーマグループ': { short: '（紹介文は準備中です）', detail: '（紹介文は準備中です）' },
+    '株式会社うさぎ薬局': { short: '（紹介文は準備中です）', detail: '（紹介文は準備中です）' },
+    'パンダ薬局（株式会社ワイエム）': { short: '（紹介文は準備中です）', detail: '（紹介文は準備中です）' },
+    '株式会社akホールディングス': { short: '（紹介文は準備中です）', detail: '（紹介文は準備中です）' },
+    '株式会社アイリスファーマ': { short: '（紹介文は準備中です）', detail: '（紹介文は準備中です）' },
+    '株式会社南山堂': { short: '（紹介文は準備中です）', detail: '（紹介文は準備中です）' },
+    '徳永薬局株式会社': { short: '（紹介文は準備中です）', detail: '（紹介文は準備中です）' },
+    '(株)ファーマみらい【共創未来グループ】': { short: '（紹介文は準備中です）', detail: '（紹介文は準備中です）' }
+  };
+  function getCompanyInfo(company) {
+    return COMPANY_INFO[company] || { short: '紹介文は準備中です。', detail: '紹介文は準備中です。' };
+  }
+
+  let currentView = 'calendar';
+  function setView(v) {
+    currentView = v;
+    const isCal = v === 'calendar';
+    document.getElementById('calCard').style.display = isCal ? '' : 'none';
+    document.getElementById('companyBrowser').style.display = isCal ? 'none' : '';
+    document.getElementById('viewCalBtn').classList.toggle('active', isCal);
+    document.getElementById('viewCompanyBtn').classList.toggle('active', !isCal);
+    if (!isCal) showCompanyList();
+  }
+
+  // 掲載企業を五十音順で
+  function companyOrderList() {
+    return [...new Set(allEvents.map(e => e.company))]
+      .sort((a, b) => (COMPANY_KANA[a] || a).localeCompare(COMPANY_KANA[b] || b, 'ja'));
+  }
+  function companyEventCount(company) {
+    return allEvents.filter(e => e.company === company).length;
+  }
+
+  function showCompanyList() {
+    document.getElementById('companyDetailView').style.display = 'none';
+    const listEl = document.getElementById('companyListView');
+    listEl.style.display = '';
+    const companies = companyOrderList();
+    listEl.innerHTML = `<div class="cb-head">気になる企業を選ぶ</div>`
+      + (companies.length ? companies.map(c => {
+          const info = getCompanyInfo(c);
+          const cnt = companyEventCount(c);
+          return `<button class="company-card" onclick="showCompanyDetail('${encodeURIComponent(c)}')">
+            <div class="cc-name"><span>${shortCompany(c)}</span><span class="cc-count">説明会${cnt}件</span></div>
+            <div class="cc-short">${info.short}</div>
+            <div class="cc-more">詳しく見る →</div>
+          </button>`;
+        }).join('')
+        : `<div class="panel-empty" style="padding:8px 4px">掲載企業がありません。</div>`);
+  }
+
+  function showCompanyDetail(encoded) {
+    const company = decodeURIComponent(encoded);
+    document.getElementById('companyListView').style.display = 'none';
+    const el = document.getElementById('companyDetailView');
+    el.style.display = '';
+    const info = getCompanyInfo(company);
+    const cnt = companyEventCount(company);
+    el.innerHTML = `
+      <button class="cb-back" onclick="showCompanyList()">← 企業一覧に戻る</button>
+      <div class="cd-name">${company}</div>
+      <div class="cd-count">説明会${cnt}件</div>
+      <div class="cd-detail">${info.detail}</div>
+      <button class="cd-cta" onclick="goToCompanyEvents('${encodeURIComponent(company)}')">この企業の説明会を予約する →</button>`;
+    document.getElementById('companyBrowser').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // 企業詳細 → その企業に絞ったカレンダー（予約画面）へ
+  function goToCompanyEvents(encoded) {
+    const company = decodeURIComponent(encoded);
+    companyFilterValue = company;
+    const sel = document.getElementById('companyFilterSelect');
+    if (sel) { sel.value = company; sel.classList.add('active'); }
+    // その企業の直近（未来優先、なければ最初）の開催日を選び、その月を表示
+    const evs = allEvents.filter(e => e.company === company)
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    const target = evs.find(e => !e.isPast) || evs[0];
+    if (target) {
+      const d = new Date(target.date);
+      viewMonth = new Date(d.getFullYear(), d.getMonth(), 1);
+      selectedKey = dateKey(d);
+    }
+    setView('calendar');
+    renderList();
+    document.getElementById('calCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // 日付文字列 → イベント配列
@@ -1947,213 +2102,3 @@
   async function handlePasswordReset() {
     const email = document.getElementById('resetEmail').value;
     const errEl = document.getElementById('resetError');
-    errEl.style.display = 'none';
-    if (!email) {
-      errEl.textContent = 'メールアドレスを入力してください';
-      errEl.style.display = 'block';
-      return;
-    }
-    const { error } = await db.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://pharmacalendar.vercel.app'
-    });
-    if (error) {
-      errEl.textContent = '送信に失敗しました: ' + error.message;
-      errEl.style.display = 'block';
-    } else {
-      closeModal('reset');
-      alert('パスワードリセット用のメールを送信しました。メールをご確認ください。');
-    }
-  }
-
-  async function handleNewPassword() {
-    const password = document.getElementById('newPassword').value;
-    const errEl = document.getElementById('newPasswordError');
-    const btn = document.querySelector('#newPasswordModal .btn-primary');
-    errEl.style.display = 'none';
-
-    if (!password || password.length < 8) {
-      errEl.textContent = 'パスワードは8文字以上にしてください';
-      errEl.style.display = 'block';
-      return;
-    }
-    if (btn) { btn.disabled = true; btn.textContent = '設定中…'; }
-
-    try {
-      const accessToken = recoveryAccessToken;
-      if (!accessToken) {
-        errEl.textContent = 'セッションが切れています。もう一度パスワードリセットのメールからやり直してください。';
-        errEl.style.display = 'block';
-        return;
-      }
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      let res;
-      try {
-        res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': EDGE_ANON_KEY,
-            'Authorization': `Bearer ${accessToken}`
-          },
-          body: JSON.stringify({ password }),
-          signal: controller.signal
-        });
-      } finally {
-        clearTimeout(timeoutId);
-      }
-
-      if (res.ok) {
-        recoveryAccessToken = null;
-        closeModal('newPassword');
-        alert('パスワードを変更しました。');
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        const errorCode = (errData.error_code || errData.code || '').toLowerCase();
-        const rawMsg = (errData.message || errData.msg || '').toLowerCase();
-        let userMsg;
-        if (errorCode === 'same_password' || rawMsg.includes('different from the old') || rawMsg.includes('same as the old') || rawMsg.includes('same password')) {
-          userMsg = '現在設定されているパスワードと同じです。別のパスワードを入力してください。';
-        } else if (errorCode === 'password_history_not_met' || rawMsg.includes('password history') || rawMsg.includes('previously used') || rawMsg.includes('been used before')) {
-          userMsg = '以前使用したことのあるパスワードは使用できません。新しいパスワードを入力してください。';
-        } else if (rawMsg.includes('at least') && rawMsg.includes('character')) {
-          userMsg = 'パスワードは8文字以上で入力してください。';
-        } else if (rawMsg.includes('weak') || rawMsg.includes('strength')) {
-          userMsg = 'パスワードが簡単すぎます。英字・数字を組み合わせてください。';
-        } else if (res.status === 401 || errorCode.includes('invalid') || rawMsg.includes('invalid') || rawMsg.includes('expired')) {
-          userMsg = 'リンクの有効期限が切れています。もう一度パスワードリセットのメールを送ってください。';
-        } else {
-          userMsg = `設定に失敗しました。（${errData.error_code || errData.msg || res.status}）`;
-        }
-        errEl.textContent = userMsg;
-        errEl.style.display = 'block';
-      }
-    } catch (e) {
-      if (e.name === 'AbortError') {
-        errEl.textContent = '通信がタイムアウトしました。再度お試しください。';
-      } else {
-        errEl.textContent = 'エラーが発生しました: ' + (e.message || String(e));
-      }
-      errEl.style.display = 'block';
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = '設定する'; }
-    }
-  }
-
-  async function handleLogin() {
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    const errEl = document.getElementById('loginError');
-    errEl.textContent = '処理中...';
-    errEl.style.display = 'block';
-
-    try {
-      const res = await fetch(
-        `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'apikey': EDGE_ANON_KEY },
-          body: JSON.stringify({ email, password })
-        }
-      );
-      const authData = await res.json();
-
-      if (!res.ok) {
-        const raw = ((authData.error_description || authData.msg || authData.message || authData.error || '') + '').toLowerCase();
-        let msg;
-        if (raw.includes('invalid') || raw.includes('credentials') || raw.includes('password')) {
-          msg = 'メールアドレスまたはパスワードが正しくありません。';
-        } else if (raw.includes('not confirmed')) {
-          msg = 'メールアドレスの確認が完了していません。届いたメールのリンクをクリックしてください。';
-        } else if (raw.includes('too many') || raw.includes('rate')) {
-          msg = 'ログイン試行回数が多すぎます。しばらく待ってからお試しください。';
-        } else {
-          msg = 'ログインに失敗しました。もう一度お試しください。';
-        }
-        errEl.textContent = msg;
-        return;
-      }
-
-      sessionToken = authData.access_token;
-      currentUser = authData.user;
-      saveUserSession(authData);
-      fetch(`${SUPABASE_URL}/rest/v1/login_events`, {
-        method: 'POST',
-        headers: {
-          'apikey': EDGE_ANON_KEY,
-          'Authorization': `Bearer ${authData.access_token}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=minimal'
-        },
-        body: JSON.stringify({ user_id: authData.user.id })
-      }).catch(() => {});
-      try { await ensureProfile(authData.user); } catch(e) {}
-      updateNavForUser(authData.user);
-      await loadMyApplications();
-      errEl.style.display = 'none';
-      closeModal('login');
-      renderList();
-    } catch(e) {
-      errEl.textContent = 'ネットワークエラーが発生しました。もう一度お試しください。';
-    }
-  }
-
-  async function handleLogout() {
-    if (sessionToken) {
-      fetch(`${SUPABASE_URL}/auth/v1/logout`, {
-        method: 'POST',
-        headers: { 'apikey': EDGE_ANON_KEY, 'Authorization': `Bearer ${sessionToken}` }
-      }).catch(() => {});
-    }
-    clearUserSession();
-    sessionToken = null;
-    currentUser = null;
-    appliedEventIds = new Set();
-    updateNavForLoggedOut();
-    renderList();
-  }
-
-  // =============================================
-  // モーダル管理
-  // =============================================
-  function openModal(name) { document.getElementById(name + 'Modal').classList.add('active'); }
-  function closeModal(name) { document.getElementById(name + 'Modal').classList.remove('active'); }
-
-  // =============================================
-  // 起動
-  // =============================================
-  (async () => {
-    fetch(`${SUPABASE_URL}/rest/v1/site_visits`, {
-      method: 'POST',
-      headers: {
-        'apikey': EDGE_ANON_KEY,
-        'Authorization': `Bearer ${EDGE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: '{}'
-    }).catch(() => {});
-
-    // 先に空のカレンダーを描画し、データ到着後に埋める（体感速度向上）
-    renderList();
-    loadEvents();
-
-    const restored = await restoreSession();
-    if (restored?.user) {
-      updateNavForUser(restored.user);
-      ensureProfile(restored.user).catch(() => {});
-      await loadMyApplications();
-      renderList();
-    }
-
-    // 30分ごとに自動更新（開きっぱなしのタブ・アプリでもトークンを切らさない）
-    setInterval(() => { if (sessionToken) restoreSession(); }, 30 * 60 * 1000);
-
-    // アプリ／タブがバックグラウンドから復帰した時にも更新
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && sessionToken) restoreSession();
-    });
-  })();
-</script>
-<script>
-  if ('serviceWorker' in navigator
