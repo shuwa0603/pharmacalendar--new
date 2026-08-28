@@ -2102,3 +2102,220 @@
   async function handlePasswordReset() {
     const email = document.getElementById('resetEmail').value;
     const errEl = document.getElementById('resetError');
+    errEl.style.display = 'none';
+    if (!email) {
+      errEl.textContent = 'メールアドレスを入力してください';
+      errEl.style.display = 'block';
+      return;
+    }
+    const { error } = await db.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://pharmacalendar.vercel.app'
+    });
+    if (error) {
+      errEl.textContent = '送信に失敗しました: ' + error.message;
+      errEl.style.display = 'block';
+    } else {
+      closeModal('reset');
+      alert('パスワードリセット用のメールを送信しました。メールをご確認ください。');
+    }
+  }
+
+  async function handleNewPassword() {
+    const password = document.getElementById('newPassword').value;
+    const errEl = document.getElementById('newPasswordError');
+    const btn = document.querySelector('#newPasswordModal .btn-primary');
+    errEl.style.display = 'none';
+
+    if (!password || password.length < 8) {
+      errEl.textContent = 'パスワードは8文字以上にしてください';
+      errEl.style.display = 'block';
+      return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = '設定中…'; }
+
+    try {
+      const accessToken = recoveryAccessToken;
+      if (!accessToken) {
+        errEl.textContent = 'セッションが切れています。もう一度パスワードリセットのメールからやり直してください。';
+        errEl.style.display = 'block';
+        return;
+      }
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      let res;
+      try {
+        res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': EDGE_ANON_KEY,
+            'Authorization': `Bearer ${accessToken}`
+          },
+          body: JSON.stringify({ password }),
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if (res.ok) {
+        recoveryAccessToken = null;
+        closeModal('newPassword');
+        alert('パスワードを変更しました。');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const errorCode = (errData.error_code || errData.code || '').toLowerCase();
+        const rawMsg = (errData.message || errData.msg || '').toLowerCase();
+        let userMsg;
+        if (errorCode === 'same_password' || rawMsg.includes('different from the old') || rawMsg.includes('same as the old') || rawMsg.includes('same password')) {
+          userMsg = '現在設定されているパスワードと同じです。別のパスワードを入力してください。';
+        } else if (errorCode === 'password_history_not_met' || rawMsg.includes('password history') || rawMsg.includes('previously used') || rawMsg.includes('been used before')) {
+          userMsg = '以前使用したことのあるパスワードは使用できません。新しいパスワードを入力してください。';
+        } else if (rawMsg.includes('at least') && rawMsg.includes('character')) {
+          userMsg = 'パスワードは8文字以上で入力してください。';
+        } else if (rawMsg.includes('weak') || rawMsg.includes('strength')) {
+          userMsg = 'パスワードが簡単すぎます。英字・数字を組み合わせてください。';
+        } else if (res.status === 401 || errorCode.includes('invalid') || rawMsg.includes('invalid') || rawMsg.includes('expired')) {
+          userMsg = 'リンクの有効期限が切れています。もう一度パスワードリセットのメールを送ってください。';
+        } else {
+          userMsg = `設定に失敗しました。（${errData.error_code || errData.msg || res.status}）`;
+        }
+        errEl.textContent = userMsg;
+        errEl.style.display = 'block';
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        errEl.textContent = '通信がタイムアウトしました。再度お試しください。';
+      } else {
+        errEl.textContent = 'エラーが発生しました: ' + (e.message || String(e));
+      }
+      errEl.style.display = 'block';
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '設定する'; }
+    }
+  }
+
+  async function handleLogin() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginError');
+    errEl.textContent = '処理中...';
+    errEl.style.display = 'block';
+
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/auth/v1/token?grant_type=password`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'apikey': EDGE_ANON_KEY },
+          body: JSON.stringify({ email, password })
+        }
+      );
+      const authData = await res.json();
+
+      if (!res.ok) {
+        const raw = ((authData.error_description || authData.msg || authData.message || authData.error || '') + '').toLowerCase();
+        let msg;
+        if (raw.includes('invalid') || raw.includes('credentials') || raw.includes('password')) {
+          msg = 'メールアドレスまたはパスワードが正しくありません。';
+        } else if (raw.includes('not confirmed')) {
+          msg = 'メールアドレスの確認が完了していません。届いたメールのリンクをクリックしてください。';
+        } else if (raw.includes('too many') || raw.includes('rate')) {
+          msg = 'ログイン試行回数が多すぎます。しばらく待ってからお試しください。';
+        } else {
+          msg = 'ログインに失敗しました。もう一度お試しください。';
+        }
+        errEl.textContent = msg;
+        return;
+      }
+
+      sessionToken = authData.access_token;
+      currentUser = authData.user;
+      saveUserSession(authData);
+      fetch(`${SUPABASE_URL}/rest/v1/login_events`, {
+        method: 'POST',
+        headers: {
+          'apikey': EDGE_ANON_KEY,
+          'Authorization': `Bearer ${authData.access_token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ user_id: authData.user.id })
+      }).catch(() => {});
+      try { await ensureProfile(authData.user); } catch(e) {}
+      updateNavForUser(authData.user);
+      await loadMyApplications();
+      errEl.style.display = 'none';
+      closeModal('login');
+      renderList();
+    } catch(e) {
+      errEl.textContent = 'ネットワークエラーが発生しました。もう一度お試しください。';
+    }
+  }
+
+  async function handleLogout() {
+    if (sessionToken) {
+      fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+        method: 'POST',
+        headers: { 'apikey': EDGE_ANON_KEY, 'Authorization': `Bearer ${sessionToken}` }
+      }).catch(() => {});
+    }
+    clearUserSession();
+    sessionToken = null;
+    currentUser = null;
+    appliedEventIds = new Set();
+    updateNavForLoggedOut();
+    renderList();
+  }
+
+  // =============================================
+  // モーダル管理
+  // =============================================
+  function openModal(name) { document.getElementById(name + 'Modal').classList.add('active'); }
+  function closeModal(name) { document.getElementById(name + 'Modal').classList.remove('active'); }
+
+  // =============================================
+  // 起動
+  // =============================================
+  (async () => {
+    fetch(`${SUPABASE_URL}/rest/v1/site_visits`, {
+      method: 'POST',
+      headers: {
+        'apikey': EDGE_ANON_KEY,
+        'Authorization': `Bearer ${EDGE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: '{}'
+    }).catch(() => {});
+
+    // 先に空のカレンダーを描画し、データ到着後に埋める（体感速度向上）
+    renderList();
+    loadEvents();
+
+    const restored = await restoreSession();
+    if (restored?.user) {
+      updateNavForUser(restored.user);
+      ensureProfile(restored.user).catch(() => {});
+      await loadMyApplications();
+      renderList();
+    }
+
+    // 30分ごとに自動更新（開きっぱなしのタブ・アプリでもトークンを切らさない）
+    setInterval(() => { if (sessionToken) restoreSession(); }, 30 * 60 * 1000);
+
+    // アプリ／タブがバックグラウンドから復帰した時にも更新
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && sessionToken) restoreSession();
+    });
+  })();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    });
+  }
+</script>
+</body>
+</html>
