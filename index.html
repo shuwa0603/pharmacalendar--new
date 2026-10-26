@@ -1246,9 +1246,8 @@
     listEl.innerHTML = `<div class="cb-head">気になる企業を選ぶ</div>`
       + (companies.length ? companies.map(c => {
           const info = getCompanyInfo(c);
-          const cnt = companyEventCount(c);
           return `<button class="company-card" onclick="showCompanyDetail('${encodeURIComponent(c)}')">
-            <div class="cc-name"><span>${shortCompany(c)}</span><span class="cc-count">説明会${cnt}件</span></div>
+            <div class="cc-name"><span>${shortCompany(c)}</span></div>
             <div class="cc-short">${info.short}</div>
             <div class="cc-more">詳しく見る →</div>
           </button>`;
@@ -1262,11 +1261,9 @@
     const el = document.getElementById('companyDetailView');
     el.style.display = '';
     const info = getCompanyInfo(company);
-    const cnt = companyEventCount(company);
     el.innerHTML = `
       <button class="cb-back" onclick="showCompanyList()">← 企業一覧に戻る</button>
       <div class="cd-name">${company}</div>
-      <div class="cd-count">説明会${cnt}件</div>
       <div class="cd-detail">${info.detail}</div>
       <button class="cd-cta" onclick="goToCompanyEvents('${encodeURIComponent(company)}')">この企業の説明会を予約する →</button>`;
     document.getElementById('companyBrowser').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2311,4 +2308,10 @@
   })();
 </script>
 <script>
-  if ('serviceWo
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+    });
+  }
+</script>
+</body>
