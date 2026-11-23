@@ -2272,6 +2272,25 @@
   function closeModal(name) { document.getElementById(name + 'Modal').classList.remove('active'); }
 
   // =============================================
+  // 訪問ログ用の情報（アプリ/Web判別と匿名の端末ID。個人は特定しない）
+  // =============================================
+  function visitInfo() {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPhone|iPad|iPod/.test(ua);
+    // iOSのアプリ内表示(WebView)はUAに「Safari」が含まれない
+    const platform = (isIOS && !/Safari/.test(ua)) ? 'app' : 'web';
+    let deviceId = null;
+    try {
+      deviceId = localStorage.getItem('pc_device_id');
+      if (!deviceId) {
+        deviceId = (crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2));
+        localStorage.setItem('pc_device_id', deviceId);
+      }
+    } catch (e) {}
+    return { platform, device_id: deviceId };
+  }
+
+  // =============================================
   // 起動
   // =============================================
   (async () => {
@@ -2283,36 +2302,9 @@
         'Content-Type': 'application/json',
         'Prefer': 'return=minimal'
       },
-      body: '{}'
+      body: JSON.stringify(visitInfo())
     }).catch(() => {});
 
     // 先に空のカレンダーを描画し、データ到着後に埋める（体感速度向上）
     renderList();
-    loadEvents();
-
-    const restored = await restoreSession();
-    if (restored?.user) {
-      updateNavForUser(restored.user);
-      ensureProfile(restored.user).catch(() => {});
-      await loadMyApplications();
-      renderList();
-    }
-
-    // 30分ごとに自動更新（開きっぱなしのタブ・アプリでもトークンを切らさない）
-    setInterval(() => { if (sessionToken) restoreSession(); }, 30 * 60 * 1000);
-
-    // アプリ／タブがバックグラウンドから復帰した時にも更新
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && sessionToken) restoreSession();
-    });
-  })();
-</script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/service-worker.js').catch(() => {});
-    });
-  }
-</script>
-</body>
-</html>
+    loadEvents(
